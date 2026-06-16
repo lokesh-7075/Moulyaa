@@ -1,0 +1,57 @@
+.dashboard-page{
+
+  display:flex;
+  height:100vh;
+
+}
+
+/* SIDEBAR */
+
+.dashboard-sidebar{
+
+  width:250px;
+  background:#1e293b;
+
+  color:white;
+
+  display:flex;
+  flex-direction:column;
+  gap:20px;
+
+  padding:30px;
+
+}
+
+.dashboard-sidebar h2{
+
+  margin-bottom:20px;
+
+}
+
+.dashboard-sidebar a{
+
+  color:white;
+  text-decoration:none;
+
+  padding:8px;
+
+  border-radius:6px;
+
+}
+
+.dashboard-sidebar a:hover{
+
+  background:#334155;
+
+}
+
+/* CONTENT */
+
+.dashboard-content{
+
+  flex:1;
+  padding:40px;
+
+  background:#f1f5f9;
+
+}
