@@ -363,4 +363,4 @@ For complete architectural step-by-step guidance, refer to [AWS_DEPLOYMENT_GUIDE
 
 ## 📄 License
 
-This project is licensed under the **MIT License**. Feel free to use, modify, and distribute with attribution.
+This project is licensed under the **lokesh License**. Feel free to use, modify, and distribute with attribution.
