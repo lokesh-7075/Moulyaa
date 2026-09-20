@@ -35,9 +35,9 @@ if (!fs.existsSync(uploadsPath)) {
 
 app.use(cors());
 
-app.use(express.json());
+app.use(express.json({ limit: "50mb" }));
 
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 
 // ======================
@@ -68,6 +68,8 @@ const reviewRoutes = require("./routes/reviewRoutes");
 const foodRoutes = require("./routes/foodRoutes");
 const roomRoutes = require("./routes/roomRoutes.js");
 const guidePostRoutes = require("./routes/guidePostRoutes");
+const aiRoutes = require("./routes/aiRoutes");
+const bundleRoutes = require("./routes/bundleRoutes");
 
 
 console.log("Food Routes file loaded")
@@ -76,6 +78,8 @@ console.log("Food Routes file loaded")
 // ======================
 // API ROUTES
 // ======================
+app.use("/api/ai", aiRoutes);
+app.use("/api/bundles", bundleRoutes);
 app.use("/api/guide-posts", guidePostRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
@@ -94,11 +98,48 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/foods", foodRoutes);
 
 // ======================
-// HEALTH CHECK
+// CLOUDWATCH LOGGING
+// ======================
+const cloudwatchLogger = require("./middleware/cloudwatchLogger");
+app.use(cloudwatchLogger);
+
+// ======================
+// HEALTH & AWS STATUS
 // ======================
 
 app.get("/", (req, res) => {
-  res.send("🌍 Moulyas Tourism API running...");
+  res.send("🌍 Moulyas Tourism API running on AWS...");
+});
+
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "HEALTHY",
+    uptimeSeconds: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || "development"
+  });
+});
+
+app.get("/api/aws/status", async (req, res) => {
+  const awsRegion = process.env.AWS_REGION || "us-east-1";
+  const hasBedrock = !!process.env.AWS_ACCESS_KEY_ID || !!process.env.AWS_ROLE_ARN || !!process.env.AWS_CONTAINER_CREDENTIALS_RELATIVE_URI;
+  const s3Bucket = process.env.AWS_S3_BUCKET_NAME || "moulyasree-tourism-bucket";
+  const cdnDomain = process.env.AWS_CLOUDFRONT_DOMAIN || "Direct / CloudFront";
+
+  res.json({
+    service: "Moulyasree Tourism Cloud API",
+    status: "ONLINE",
+    awsArchitecture: {
+      region: awsRegion,
+      bedrockModelId: process.env.BEDROCK_MODEL_ID || "anthropic.claude-3-haiku-20240307-v1:0",
+      bedrockActive: hasBedrock,
+      s3BucketName: s3Bucket,
+      cloudFrontCDN: cdnDomain,
+      dynamoCatalog: "DynamoDB (Moulyasree_Hotels, Moulyasree_Vehicles, Moulyasree_Restaurants, Moulyasree_Guides)",
+      databaseType: "Amazon DocumentDB / MongoDB"
+    },
+    uptime: `${Math.floor(process.uptime())}s`
+  });
 });
 
 

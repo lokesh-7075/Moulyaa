@@ -54,15 +54,7 @@ const uploadRegisterImages = (req, res, next) => {
     // SERVICE IMAGE VALIDATION
     // ======================
     if (providerRoles.includes(role)) {
-
       const serviceImages = req.files.serviceImages || [];
-
-      if (serviceImages.length === 0) {
-        return res.status(400).json({
-          message: "Upload at least 1 service image"
-        });
-      }
-
       if (serviceImages.length > 5) {
         return res.status(400).json({
           message: "Maximum 5 service images allowed"

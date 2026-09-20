@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import API from "../services/api";
+import "./Providers.css";
 
 function Providers(){
 
@@ -66,74 +67,98 @@ function Providers(){
 
     const grouped = groupByRole(data);
 
+    if (data.length === 0) {
+      return (
+        <div className="empty-providers-card">
+          <span className="empty-icon">📭</span>
+          <p className="empty-text">No providers in this section.</p>
+        </div>
+      );
+    }
+
     return Object.keys(grouped).map(role=>(
 
-      <div key={role} className="mb-10">
+      <div key={role} className="providers-section">
 
         {/* ROLE TITLE */}
-        <h2 className="text-xl font-bold mb-4 capitalize text-orange-600">
-          {role.replace("_"," ")}
-        </h2>
+        <div className="providers-section-header">
+          <h2 className="providers-section-title">
+            {role.replace("_"," ")}s
+          </h2>
+        </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="providers-grid">
 
           {grouped[role].map(user=>(
 
-            <div
-              key={user._id}
-              className="
-                bg-white/60 backdrop-blur-xl border border-white/30
-                rounded-3xl p-5 shadow-xl
-                hover:shadow-2xl hover:-translate-y-1 transition
-              "
-            >
+            <div key={user._id} className="provider-card">
 
               {/* IMAGE */}
-              <img
-                src={getImage(user.profileImage)}
-                className="w-20 h-20 rounded-full mx-auto mb-3 border"
-              />
+              <div className="provider-avatar-wrapper">
+                <img
+                  src={getImage(user.profileImage)}
+                  onError={(e)=>{
+                    e.target.src = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+                  }}
+                  className="provider-avatar"
+                />
+              </div>
 
-              <h3 className="text-center font-bold text-lg">
+              <h3 className="provider-name">
                 {user.name}
               </h3>
 
-              <p className="text-center text-gray-500 text-sm">
+              <p className="provider-email">
                 {user.email}
               </p>
 
-              <p className="text-center text-sm mt-1">
-                {user.role}
-              </p>
+              <div className="provider-badges">
+                <span className={`badge ${
+                  user.status === "approved"
+                    ? "badge-approved"
+                    : user.status === "pending"
+                    ? "badge-pending"
+                    : "badge-rejected"
+                }`}>
+                  {user.status}
+                </span>
 
-              {/* SERVICE IMAGES */}
-              <div className="flex gap-2 mt-4 flex-wrap justify-center">
-
-                {user.serviceImages?.map((img,i)=>(
-                  <img
-                    key={i}
-                    src={getImage(img)}
-                    className="w-14 h-14 rounded object-cover"
-                  />
-                ))}
-
+                <span className="badge badge-role">
+                  {role.replace("_"," ")}
+                </span>
               </div>
 
+              {/* SERVICE IMAGES */}
+              {user.serviceImages && user.serviceImages.length > 0 && (
+                <div className="credentials-section">
+                  <p className="credentials-title">Service Credentials</p>
+                  <div className="credentials-gallery">
+                    {user.serviceImages.map((img,i)=>(
+                      <img
+                        key={i}
+                        src={getImage(img)}
+                        className="credentials-img"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* ACTIONS */}
-              <div className="flex gap-2 mt-5">
+              <div className="actions-row">
 
                 {activeTab === "pending" && (
                   <>
                     <button
                       onClick={()=>approve(user._id)}
-                      className="flex-1 bg-green-500 text-white py-2 rounded-xl hover:bg-green-600"
+                      className="btn-approve"
                     >
                       Approve
                     </button>
 
                     <button
                       onClick={()=>reject(user._id)}
-                      className="flex-1 bg-red-500 text-white py-2 rounded-xl hover:bg-red-600"
+                      className="btn-reject"
                     >
                       Reject
                     </button>
@@ -143,9 +168,9 @@ function Providers(){
                 {activeTab === "approved" && (
                   <button
                     onClick={()=>deleteUser(user._id)}
-                    className="flex-1 bg-red-500 text-white py-2 rounded-xl hover:bg-red-600"
+                    className="btn-delete-provider"
                   >
-                    Delete
+                    Delete Provider
                   </button>
                 )}
 
@@ -165,26 +190,23 @@ function Providers(){
 
   return(
 
-    <div className="min-h-screen p-8 bg-gradient-to-br from-orange-50 via-white to-pink-50">
+    <div className="providers-container">
 
       {/* HEADER */}
-      <div className="flex justify-between items-center mb-8">
-
-        <h1 className="text-3xl font-extrabold bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
-          Admin Panel 👑
+      <div className="providers-header">
+        <h1 className="providers-title">
+          🔑 Provider Verification Control
         </h1>
-
+        <p className="providers-subtitle">Review new registration submissions, audit credentials, and grant access.</p>
       </div>
 
       {/* TABS */}
-      <div className="flex gap-4 mb-6">
+      <div className="tab-bar">
 
         <button
           onClick={()=>setActiveTab("pending")}
-          className={`px-5 py-2 rounded-full ${
-            activeTab==="pending"
-              ? "bg-orange-500 text-white"
-              : "bg-white shadow"
+          className={`tab-btn ${
+            activeTab === "pending" ? "tab-btn-pending-active" : ""
           }`}
         >
           Pending
@@ -192,10 +214,8 @@ function Providers(){
 
         <button
           onClick={()=>setActiveTab("approved")}
-          className={`px-5 py-2 rounded-full ${
-            activeTab==="approved"
-              ? "bg-green-500 text-white"
-              : "bg-white shadow"
+          className={`tab-btn ${
+            activeTab === "approved" ? "tab-btn-approved-active" : ""
           }`}
         >
           Approved

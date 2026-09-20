@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import "./Navbar.css";
 
-function Navbar() {
+function Navbar({ onMenuClick }) {
 
   const navigate = useNavigate();
   const [open,setOpen] = useState(false);
@@ -17,6 +18,8 @@ function Navbar() {
     const index = clean.indexOf("uploads/");
     if(index !== -1){
       imageUrl = `${BASE_URL}/${clean.substring(index)}`;
+    } else {
+      imageUrl = `${BASE_URL}/uploads/${clean}`;
     }
   }
 
@@ -27,59 +30,53 @@ function Navbar() {
 
   return (
 
-    <div className="
-      fixed top-0 left-64 right-0 z-40 h-[70px]
-      backdrop-blur-xl bg-white/40 border-b border-white/30
-      flex items-center justify-between px-6
-      shadow-lg
-    ">
+    <div className="admin-navbar">
 
-      {/* TITLE */}
-      <h1 className="
-        text-xl font-bold
-        bg-gradient-to-r from-purple-600 to-pink-500
-        bg-clip-text text-transparent
-      ">
-        Dashboard Overview
-      </h1>
+      {/* LEFT AREA: TITLE & HAMBURGER */}
+      <div className="navbar-left">
+        <button
+          onClick={onMenuClick}
+          className="hamburger-btn"
+        >
+          <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+
+        <h1 className="navbar-title">
+          Dashboard Overview
+        </h1>
+      </div>
 
       {/* RIGHT */}
-      <div className="flex items-center gap-4">
+      <div className="navbar-right">
 
-        <p className="hidden md:block text-sm text-gray-700">
-          Welcome, <span className="font-semibold">{user?.name}</span>
+        <p className="welcome-msg">
+          Welcome, <span className="welcome-name">{user?.name}</span>
         </p>
 
-        <div className="relative">
+        <div className="profile-dropdown-wrapper">
 
           <img
             src={imageUrl}
             onClick={()=>setOpen(!open)}
-            className="w-10 h-10 rounded-full cursor-pointer border-2 border-white shadow hover:scale-110 transition"
+            className="navbar-profile-avatar"
           />
 
           {open && (
-            <div className="
-              absolute right-0 mt-3 w-60
-              bg-white/90 backdrop-blur-xl
-              rounded-2xl shadow-2xl p-4
-            ">
+            <div className="navbar-dropdown">
 
-              <div className="flex items-center gap-3 mb-3">
-                <img src={imageUrl} className="w-12 h-12 rounded-full"/>
+              <div className="dropdown-user-header">
+                <img src={imageUrl} className="dropdown-avatar-img"/>
                 <div>
-                  <p className="font-semibold">{user?.name}</p>
-                  <p className="text-sm text-gray-500">{user?.role}</p>
+                  <p className="dropdown-user-name">{user?.name}</p>
+                  <p className="dropdown-user-role">{user?.role}</p>
                 </div>
               </div>
 
               <button
                 onClick={logout}
-                className="
-                  w-full py-2 rounded-xl
-                  bg-gradient-to-r from-red-500 to-pink-500
-                  text-white hover:scale-105 transition
-                "
+                className="navbar-logout-btn"
               >
                 Logout
               </button>

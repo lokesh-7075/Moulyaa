@@ -7,46 +7,45 @@ import {
   CreditCard,
   Wallet
 } from "lucide-react";
+import "./Sidebar.css";
 
-function Sidebar() {
+function Sidebar({ isOpen, setIsOpen }) {
 
   const location = useLocation();
 
   const linkClass = (path) =>
-    `flex items-center gap-3 p-3 rounded-xl transition-all duration-300 ${
-      location.pathname === path
-        ? "bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-lg scale-[1.02]"
-        : "text-gray-200 hover:bg-white/10 hover:scale-[1.02]"
-    }`;
+    `sidebar-link ${location.pathname === path ? "sidebar-link-active" : ""}`;
 
   return (
 
-    <div className="
-      fixed top-0 left-0 h-full w-64 z-50
-      bg-[#3b0a45]
-      flex flex-col
-      shadow-2xl
-    ">
+    <div className={`admin-sidebar ${isOpen ? "sidebar-open" : ""}`}>
+
+      {/* MOBILE CLOSE */}
+      <div className="mobile-close-header">
+        <span className="mobile-close-title">Navigation</span>
+        <button 
+          onClick={() => setIsOpen(false)}
+          className="mobile-close-btn"
+        >
+          ✕
+        </button>
+      </div>
 
       {/* LOGO */}
-      <div className="py-6 text-center border-b border-white/10">
+      <div className="sidebar-logo-section">
 
-        <h1 className="
-          text-3xl font-extrabold tracking-wide
-          bg-gradient-to-r from-pink-400 via-purple-400 to-orange-400
-          bg-clip-text text-transparent
-        ">
+        <h1 className="sidebar-logo-text">
           Moulyas
         </h1>
 
-        <p className="text-xs text-gray-300 mt-1">
+        <p className="sidebar-logo-sub">
           Admin Panel
         </p>
 
       </div>
 
       {/* MENU */}
-      <div className="flex-1 px-4 py-6 space-y-3 overflow-y-auto">
+      <div className="sidebar-menu-list">
 
         <Link to="/" className={linkClass("/")}>
           <LayoutDashboard size={18}/> Dashboard

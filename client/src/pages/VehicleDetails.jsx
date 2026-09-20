@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import API from "../services/api";
 
+import { getServiceImage } from "../services/imageHelper";
+
 function VehicleDetails(){
 
   const { id } = useParams();
@@ -13,14 +15,9 @@ function VehicleDetails(){
 
   const user = JSON.parse(localStorage.getItem("user") || "null");
 
-  const BASE_URL = "http://localhost:5000";
-
   // IMAGE FIX
   const getImageUrl = (path) => {
-    if (!path) return "https://via.placeholder.com/400";
-
-    const clean = path.replace(/^\/+/, "");
-    return `${BASE_URL}/${clean}`;
+    return getServiceImage(path, "vehicle");
   };
 
   // FETCH VEHICLE

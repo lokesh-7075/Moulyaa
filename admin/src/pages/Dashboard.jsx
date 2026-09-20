@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import API from "../services/api";
+import "./Dashboard.css";
 
 function Dashboard(){
 
@@ -72,79 +73,109 @@ function Dashboard(){
 
   return(
 
-    <div className="min-h-screen p-8 bg-gradient-to-br from-orange-50 via-white to-pink-50">
+    <div className="dashboard-container">
 
       {/* ================= HEADER ================= */}
-      <h1 className="
-        text-4xl font-extrabold mb-10
-        bg-gradient-to-r from-orange-500 via-pink-500 to-rose-500
-        bg-clip-text text-transparent
-        drop-shadow-lg
-      ">
-        🚀 Admin Dashboard Overview
-      </h1>
+      <div className="dashboard-header">
+        <h1 className="dashboard-title">
+          👑 Admin Overview Control
+        </h1>
+        <p className="dashboard-subtitle">Real-time system totals, business metrics, and financial status.</p>
+      </div>
 
       {/* ================= CARDS ================= */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="metrics-grid">
 
         {/* USERS */}
-        <div className="card hover:shadow-orange-300">
-          <p className="text-gray-500 mb-2">👤 Travelers</p>
-          <h2 className="text-3xl font-bold text-orange-600">
+        <div className="metric-card card-users">
+          <div className="metric-card-top">
+            <span className="metric-label">Travelers</span>
+            <span className="metric-icon">👤</span>
+          </div>
+          <h2 className="metric-value">
             {stats.totalUsers}
           </h2>
+          <p className="metric-card-desc">Registered customer accounts</p>
         </div>
 
         {/* PROVIDERS */}
-        <div className="card hover:shadow-blue-300">
-          <p className="text-gray-500 mb-2">🏨 Providers</p>
-          <h2 className="text-3xl font-bold text-blue-600">
+        <div className="metric-card card-providers">
+          <div className="metric-card-top">
+            <span className="metric-label">Providers</span>
+            <span className="metric-icon">🏨</span>
+          </div>
+          <h2 className="metric-value">
             {stats.totalProviders}
           </h2>
+          <p className="metric-card-desc">Registered business agencies</p>
         </div>
 
         {/* BOOKINGS */}
-        <div className="card hover:shadow-purple-300">
-          <p className="text-gray-500 mb-2">📦 Bookings</p>
-          <h2 className="text-3xl font-bold text-purple-600">
+        <div className="metric-card card-bookings">
+          <div className="metric-card-top">
+            <span className="metric-label">Bookings</span>
+            <span className="metric-icon">📦</span>
+          </div>
+          <h2 className="metric-value">
             {stats.totalBookings}
           </h2>
+          <p className="metric-card-desc">Completed reservations</p>
         </div>
 
         {/* REVENUE */}
-        <div className="card hover:shadow-green-300">
-          <p className="text-gray-500 mb-2">💰 Revenue</p>
-          <h2 className="text-3xl font-bold text-green-600">
+        <div className="metric-card card-revenue">
+          <div className="metric-card-top">
+            <span className="metric-label">Total Sales</span>
+            <span className="metric-icon">💰</span>
+          </div>
+          <h2 className="metric-value">
             {formatCurrency(stats.totalRevenue)}
           </h2>
-          <p className="text-xs text-gray-500 mt-1">
-            {numberToWords(stats.totalRevenue)}
+          <p className="metric-card-desc capitalize">
+            {numberToWords(stats.totalRevenue)} Rupees
           </p>
         </div>
 
       </div>
 
       {/* ================= EXTRA PANEL ================= */}
-      <div className="mt-12">
+      <div className="analytics-panel">
 
-        <div className="card">
+        <h2 className="analytics-title">
+          📊 Platform Analytics Summary
+        </h2>
 
-          <h2 className="text-xl font-bold mb-3 text-pink-600">
-            📊 Platform Summary
-          </h2>
-
-          <p className="text-gray-600 leading-relaxed">
-            Your platform currently has{" "}
-            <span className="font-semibold">{stats.totalUsers}</span> travelers and{" "}
-            <span className="font-semibold">{stats.totalProviders}</span> providers,
-            generating{" "}
-            <span className="font-semibold text-green-600">
-              {formatCurrency(stats.totalRevenue)}
-            </span>{" "}
-            revenue through{" "}
-            <span className="font-semibold">{stats.totalBookings}</span> bookings.
-          </p>
-
+        <p className="analytics-text">
+          Your tourism ecosystem is currently active with{" "}
+          <span className="highlight-bold">{stats.totalUsers}</span> travelers and{" "}
+          <span className="highlight-bold">{stats.totalProviders}</span> approved providers,
+          generating a total gross value of{" "}
+          <span className="highlight-revenue">
+            {formatCurrency(stats.totalRevenue)}
+          </span>{" "}
+          across{" "}
+          <span className="highlight-bold">{stats.totalBookings}</span> reservations.
+        </p>
+        
+        <div className="analytics-subgrid">
+          <div className="subgrid-item subgrid-item-orange">
+            <p className="subgrid-label">Average Order Size</p>
+            <p className="subgrid-value subgrid-val-orange">
+              {stats.totalBookings > 0 ? formatCurrency(Math.floor(stats.totalRevenue / stats.totalBookings)) : "₹0.00"}
+            </p>
+          </div>
+          <div className="subgrid-item subgrid-item-blue">
+            <p className="subgrid-label">Customer-to-Partner Ratio</p>
+            <p className="subgrid-value subgrid-val-blue">
+              {stats.totalProviders > 0 ? `${(stats.totalUsers / stats.totalProviders).toFixed(1)}:1` : "0:0"}
+            </p>
+          </div>
+          <div className="subgrid-item subgrid-item-purple">
+            <p className="subgrid-label">Platform Revenue Share (25%)</p>
+            <p className="subgrid-value subgrid-val-purple">
+              {formatCurrency(Math.floor(stats.totalRevenue * 0.25))}
+            </p>
+          </div>
         </div>
 
       </div>

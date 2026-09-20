@@ -14,20 +14,22 @@ function RestaurantOrders(){
 
       const res = await API.get("/bookings/provider");
 
-      const data = res.data || [];
+      const raw = res.data?.bookings || res.data;
+      const data = Array.isArray(raw) ? raw : [];
 
       // 🔥 only restaurant bookings
       const restaurantOrders = data
-        .filter(b => b.serviceType === "restaurant")
+        .filter(b => b && b.serviceType === "restaurant")
         .map(b => ({
           ...b,
-          myShare: Math.floor(b.totalAmount * 0.75)
+          myShare: Math.floor((b.totalAmount || 0) * 0.75)
         }));
 
       setOrders(restaurantOrders);
 
     }catch(err){
-      console.error(err);
+      console.warn("Restaurant orders fetch notice:", err.message);
+      setOrders([]);
     }finally{
       setLoading(false);
     }

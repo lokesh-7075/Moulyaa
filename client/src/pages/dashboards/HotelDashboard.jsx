@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../../services/api";
+import "./HotelDashboard.css";
 
 function HotelDashboard(){
 
@@ -19,14 +20,13 @@ function HotelDashboard(){
   // ================= IMAGE FIX =================
   const getImage = (path)=>{
     if(!path) return "https://cdn-icons-png.flaticon.com/512/847/847969.png";
-
-    let clean = path.replace(/\\/g,"/").replace(/^\/+/,"");
-
-    if(!clean.startsWith("uploads/")){
-      clean = "uploads/" + clean;
+    if(path.startsWith("http")) return path;
+    const clean = path.replace(/\\/g,"/");
+    const index = clean.indexOf("uploads/");
+    if(index !== -1){
+      return `${BASE_URL}/${clean.substring(index)}`;
     }
-
-    return `${BASE_URL}/${clean}`;
+    return `${BASE_URL}/uploads/${clean.replace(/^\/+/,"")}`;
   };
 
   // ================= FETCH =================
@@ -44,18 +44,20 @@ function HotelDashboard(){
       setHotel(hotelRes.data);
 
       const roomRes = await API.get(`/rooms/hotel/${hotelRes.data._id}`);
-      setRooms(roomRes.data || []);
+      setRooms(Array.isArray(roomRes.data) ? roomRes.data : []);
 
       const bookingRes = await API.get("/bookings/provider");
-
-      const hotelBookings = (bookingRes.data || []).filter(
-        b => b.serviceType === "hotel"
+      const rawB = bookingRes.data?.bookings || bookingRes.data;
+      const hotelBookings = (Array.isArray(rawB) ? rawB : []).filter(
+        b => b && b.serviceType === "hotel"
       );
 
       setBookings(hotelBookings);
 
     }catch(err){
-      console.error(err);
+      console.warn("Hotel dashboard fetch notice:", err.message);
+      setRooms([]);
+      setBookings([]);
     }finally{
       setLoading(false);
     }
@@ -95,46 +97,45 @@ function HotelDashboard(){
 
   return(
 
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-orange-50 p-6">
+    <div className="hotel-dashboard-container">
 
-      {/* ================= HEADER (Z FIX HERE 🔥) ================= */}
-      <div className="relative z-50 flex justify-between items-center mb-6 bg-white/60 backdrop-blur-xl p-4 rounded-2xl shadow-xl">
+      {/* ================= HEADER ================= */}
+      <div className="hotel-header">
 
-        <h1 className="text-3xl font-extrabold bg-gradient-to-r from-pink-500 to-orange-500 text-transparent bg-clip-text">
-          Moulyas ✨
-        </h1>
+        <div className="hotel-logo-wrapper">
+          <h1 className="hotel-title">
+            Moulyas Hotels ✨
+          </h1>
+          <p className="hotel-subtitle">Manage rooms, tracking bookings & revenue share</p>
+        </div>
 
         {/* PROFILE */}
-        <div className="relative">
+        <div className="profile-container">
 
           <img
             src={getImage(user?.profileImage)}
-            className="w-12 h-12 rounded-full cursor-pointer border hover:scale-110 transition"
+            className="profile-avatar"
             onClick={()=>setOpen(!open)}
           />
 
-          {/* ✅ FIXED DROPDOWN */}
+          {/* DROPDOWN */}
           {open && (
-            <div className="
-              absolute right-0 mt-3 w-64 
-              bg-white rounded-2xl shadow-2xl p-4
-              z-[999] border border-gray-100
-            ">
+            <div className="profile-dropdown">
 
-              <div className="flex gap-3 mb-3">
+              <div className="dropdown-user-info">
                 <img
                   src={getImage(user?.profileImage)}
-                  className="w-12 h-12 rounded-full"
+                  className="dropdown-user-img"
                 />
-                <div>
-                  <p className="font-semibold">{user?.name}</p>
-                  <p className="text-sm text-gray-500">{user?.email}</p>
+                <div className="dropdown-user-details">
+                  <p className="dropdown-user-name">{user?.name}</p>
+                  <p className="dropdown-user-email">{user?.email}</p>
                 </div>
               </div>
 
               <button
                 onClick={logout}
-                className="w-full text-red-500 hover:bg-red-50 p-2 rounded-lg"
+                className="logout-btn"
               >
                 Logout
               </button>
@@ -149,15 +150,18 @@ function HotelDashboard(){
 
       {/* ================= NO HOTEL ================= */}
       {!hotel && (
-        <div className="text-center mt-20">
-
-          <h2 className="text-xl mb-4 text-gray-700">
-            Create your hotel first
+        <div className="no-hotel-card">
+          <span className="no-hotel-icon">🏨</span>
+          <h2 className="no-hotel-title">
+            Register Your Hotel
           </h2>
+          <p className="no-hotel-desc">
+            Get started by registering your hotel first to start listing rooms and accepting bookings!
+          </p>
 
           <button
             onClick={()=>navigate("/add-hotel")}
-            className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-6 py-2 rounded-full shadow hover:scale-105 transition"
+            className="create-hotel-btn"
           >
             Create Hotel
           </button>
@@ -171,39 +175,56 @@ function HotelDashboard(){
 
         <>
           {/* HOTEL CARD */}
-          <div className="bg-white/70 backdrop-blur-xl p-6 rounded-2xl shadow-xl mb-6">
-
-            <h2 className="text-2xl font-bold">
-              {hotel.hotelName}
-            </h2>
-
-            <p className="text-gray-500">
-              📍 {hotel.location}
-            </p>
+          <div className="hotel-profile-card">
 
             {hotel.images?.[0] && (
               <img
                 src={getImage(hotel.images[0])}
-                className="w-full h-60 object-cover rounded-xl mt-4"
+                className="hotel-profile-img"
               />
             )}
+
+            <div className="hotel-profile-info">
+              <span className="hotel-profile-tag">Hotel Profile</span>
+              <h2 className="hotel-profile-name">
+                {hotel.hotelName}
+              </h2>
+
+              <p className="hotel-profile-loc">
+                📍 {hotel.location}
+              </p>
+              
+              <p className="hotel-profile-desc">
+                Welcome to your dashboard. This page provides full control over room inventory, real-time availability toggles, and financial metrics.
+              </p>
+            </div>
 
           </div>
 
 
           {/* ================= STATS ================= */}
-          <div className="grid md:grid-cols-3 gap-6 mb-10">
+          <div className="stats-grid">
 
             {[
-              {title:"Bookings",value:totalBookings,color:"from-blue-400 to-blue-600"},
-              {title:"Revenue",value:`₹${totalRevenue}`,color:"from-green-400 to-green-600"},
-              {title:"Your Share",value:`₹${myShare}`,color:"from-pink-400 to-pink-600"}
+              {title:"Total Bookings",value:totalBookings,desc:"Number of reserved rooms",colors:{start:"#3b82f6",end:"#4f46e5"},shadow:"shadow-blue-200",icon:"📅"},
+              {title:"Total Revenue",value:`₹${totalRevenue}`,desc:"Accumulated customer payments",colors:{start:"#10b981",end:"#059669"},shadow:"shadow-emerald-200",icon:"💰"},
+              {title:"Your Share (75%)",value:`₹${myShare}`,desc:"Your profit (net platform fee)",colors:{start:"#ec4899",end:"#db2777"},shadow:"shadow-pink-200",icon:"📈"}
             ].map((card,i)=>(
               <div key={i}
-                className={`bg-gradient-to-r ${card.color} text-white p-6 rounded-2xl shadow-lg hover:scale-105 transition`}
+                className="stat-card"
+                style={{
+                  "--gradient-start": card.colors.start,
+                  "--gradient-end": card.colors.end
+                }}
               >
-                <p>{card.title}</p>
-                <h2 className="text-3xl font-bold">{card.value}</h2>
+                <div className="stat-card-top">
+                  <div>
+                    <p className="stat-card-title">{card.title}</p>
+                    <h2 className="stat-card-value">{card.value}</h2>
+                  </div>
+                  <span className="stat-card-icon">{card.icon}</span>
+                </div>
+                <p className="stat-card-desc">{card.desc}</p>
               </div>
             ))}
 
@@ -211,96 +232,118 @@ function HotelDashboard(){
 
 
           {/* ADD ROOM */}
-          <button
-            onClick={()=>navigate("/add-room")}
-            className="mb-6 px-6 py-2 rounded-full 
-            bg-gradient-to-r from-green-500 to-emerald-500 
-            text-white shadow hover:scale-105 transition"
-          >
-            + Add Room
-          </button>
+          <div className="rooms-section-header">
+            <h2 className="rooms-section-title">🛏 Available Rooms</h2>
+            
+            <button
+              onClick={()=>navigate("/add-room")}
+              className="add-room-btn"
+            >
+              + Add Room
+            </button>
+          </div>
 
 
           {/* ROOMS */}
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="rooms-grid">
 
-            {rooms.map(room=>(
-
-              <div key={room._id}
-                className="bg-white/70 backdrop-blur-xl p-4 rounded-2xl shadow hover:shadow-2xl transition hover:-translate-y-1"
-              >
-
-                <img
-                  src={getImage(room.roomImages?.[0])}
-                  className="h-40 w-full object-cover rounded-xl"
-                />
-
-                <h3 className="font-bold mt-3">
-                  {room.title}
-                </h3>
-
-                <p className="text-orange-600 font-semibold">
-                  ₹{room.price}
-                </p>
-
-                <button
-                  onClick={()=>deleteRoom(room._id)}
-                  className="mt-3 w-full py-2 bg-red-500 text-white rounded hover:bg-red-600"
-                >
-                  Delete
-                </button>
-
+            {rooms.length === 0 ? (
+              <div className="no-rooms-card">
+                <p>No rooms added yet. Click "+ Add Room" to list your hotel rooms.</p>
               </div>
+            ) : (
+              rooms.map(room=>(
 
-            ))}
+                <div key={room._id} className="room-card">
+
+                  <div className="room-card-img-wrapper">
+                    <img
+                      src={getImage(room.roomImages?.[0])}
+                      className="room-card-img"
+                    />
+                    <span className="room-card-price">
+                      ₹{room.price}/day
+                    </span>
+                  </div>
+
+                  <h3 className="room-card-title">
+                    {room.title}
+                  </h3>
+
+                  <p className="room-card-desc">
+                    {room.description || "Fully furnished luxurious room equipped with modern amenities."}
+                  </p>
+
+                  <button
+                    onClick={()=>deleteRoom(room._id)}
+                    className="delete-room-btn"
+                  >
+                    Delete Room
+                  </button>
+
+                </div>
+
+              ))
+            )}
 
           </div>
 
 
           {/* BOOKINGS */}
-          <div className="mt-10">
+          <div className="bookings-section">
 
-            <h2 className="text-2xl font-bold mb-6">
-              📅 Bookings
-            </h2>
-
-            <div className="grid md:grid-cols-3 gap-6">
-
-              {bookings.map(b=>(
-
-                <div key={b._id}
-                  className="bg-white/70 backdrop-blur-xl p-5 rounded-2xl shadow hover:shadow-2xl transition"
-                >
-
-                  <p className="font-bold">
-                    {b.travelerId?.name}
-                  </p>
-
-                  <p className="text-gray-500 text-sm">
-                    {new Date(b.travelDate).toDateString()}
-                  </p>
-
-                  <p className="text-orange-600 font-bold mt-2">
-                    ₹{b.totalAmount}
-                  </p>
-
-                  <p className="text-green-600 text-sm">
-                    Your Share: ₹{Math.floor(b.totalAmount * 0.75)}
-                  </p>
-
-                  <p className={`text-xs ${
-                    b.paymentStatus === "paid"
-                      ? "text-green-600"
-                      : "text-red-500"
-                  }`}>
-                    {b.paymentStatus}
-                  </p>
-
-                </div>
-
-              ))}
-
+            <div className="bookings-header">
+              <h2 className="bookings-title">
+                📅 Realtime Bookings
+              </h2>
+              <p className="bookings-subtitle">Live feed of reservations, client information, and transaction status.</p>
             </div>
+
+            {bookings.length === 0 ? (
+              <div className="no-bookings">
+                <span className="no-bookings-icon">😴</span>
+                <p className="no-bookings-text">No bookings received yet. Share your hotel on social platforms!</p>
+              </div>
+            ) : (
+              <div className="bookings-grid">
+
+                {bookings.map(b=>(
+
+                  <div key={b._id} className="booking-card">
+                    <div className="booking-card-header">
+                      <p className="booking-card-name">
+                        {b.travelerId?.name}
+                      </p>
+                      <span className={`booking-card-status ${
+                        b.paymentStatus === "paid"
+                          ? "status-paid"
+                          : "status-pending"
+                      }`}>
+                        {b.paymentStatus}
+                      </span>
+                    </div>
+
+                    <p className="booking-card-date">
+                      📅 {new Date(b.travelDate).toDateString()}
+                    </p>
+
+                    <div className="booking-card-footer">
+                      <div>
+                        <p className="booking-card-meta-label">Customer Paid</p>
+                        <p className="booking-card-meta-val">₹{b.totalAmount}</p>
+                      </div>
+                      <div>
+                        <p className="share-label">Your Share (75%)</p>
+                        <p className="share-val">₹{Math.floor(b.totalAmount * 0.75)}</p>
+                      </div>
+                    </div>
+
+                  </div>
+
+                ))}
+
+              </div>
+            )}
 
           </div>
 

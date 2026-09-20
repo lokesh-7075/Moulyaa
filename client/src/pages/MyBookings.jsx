@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../services/api";
+import "./MyBookings.css";
 
 function MyBookings() {
 
@@ -24,9 +25,16 @@ function MyBookings() {
     const fetchBookings = async () => {
       try {
         const res = await API.get("/bookings/my-bookings");
-        setBookings(res.data || []);
+        if (Array.isArray(res.data)) {
+          setBookings(res.data);
+        } else if (res.data && Array.isArray(res.data.bookings)) {
+          setBookings(res.data.bookings);
+        } else {
+          setBookings([]);
+        }
       } catch (err) {
-        console.error(err);
+        console.warn("Bookings fetch notice:", err.message);
+        setBookings([]);
       }
     };
     fetchBookings();
@@ -41,7 +49,7 @@ function MyBookings() {
 
       // update UI without reload
       setBookings(prev =>
-        prev.map(b =>
+        (Array.isArray(prev) ? prev : []).map(b =>
           b._id === id ? { ...b, bookingStatus: "cancelled" } : b
         )
       );
@@ -54,22 +62,26 @@ function MyBookings() {
   // STATUS COLORS
   // =========================
   const getStatusColor = (status) => {
-    if (status === "confirmed") return "bg-green-100 text-green-600";
-    if (status === "pending") return "bg-yellow-100 text-yellow-600";
-    if (status === "cancelled") return "bg-red-100 text-red-600";
-    return "bg-gray-100 text-gray-600";
+    if (status === "confirmed") return "status-confirmed";
+    if (status === "pending") return "status-pending";
+    if (status === "cancelled") return "status-cancelled";
+    return "";
   };
 
+  const safeBookings = Array.isArray(bookings) ? bookings : [];
+
   return (
-    <div className="min-h-screen bg-white px-6 py-10">
+    <div className="bookings-page-container">
 
-      <h1 className="text-3xl font-bold mb-8">
-        📦 My Bookings
-      </h1>
+      <div className="bookings-page-header">
+        <h1 className="bookings-page-title">
+          📦 My Bookings
+        </h1>
+      </div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="bookings-grid">
 
-        {bookings.map((b) => {
+        {safeBookings.map((b) => {
 
           const image =
             b.serviceImage
@@ -86,51 +98,50 @@ function MyBookings() {
             "Service";
 
           return (
-            <div
-              key={b._id}
-              className="bg-white/70 backdrop-blur-xl border rounded-2xl shadow-md hover:shadow-xl transition overflow-hidden"
-            >
+            <div key={b._id} className="booking-card">
 
               {/* IMAGE */}
-              <img
-                src={image}
-                className="w-full h-40 object-cover"
-              />
+              <div className="booking-card-img-wrapper">
+                <img
+                  src={image}
+                  className="booking-card-img"
+                />
+              </div>
 
               {/* CONTENT */}
-              <div className="p-4 space-y-2">
+              <div className="booking-card-content">
 
-                <h2 className="text-lg font-semibold">
-                  {title}
-                </h2>
-
-                <p className="text-sm text-gray-500">
+                <p className="booking-card-type">
                   {b.serviceType.toUpperCase()}
                 </p>
 
-                <p className="text-sm">
+                <h2 className="booking-card-title">
+                  {title}
+                </h2>
+
+                <p className="booking-card-meta">
                   📅 {formatDate(b.travelDate)}
                 </p>
 
-                <p className="text-sm">
+                <p className="booking-card-meta">
                   👥 {b.numberOfPeople} people
                 </p>
 
-                <p className="text-lg font-bold text-orange-500">
+                <p className="booking-card-amount">
                   ₹{b.totalAmount}
                 </p>
 
                 {/* STATUS */}
-                <div className="flex justify-between items-center mt-2">
+                <div className="booking-status-row">
 
-                  <span className={`text-xs px-3 py-1 rounded-full ${getStatusColor(b.bookingStatus)}`}>
+                  <span className={`badge ${getStatusColor(b.bookingStatus)}`}>
                     {b.bookingStatus}
                   </span>
 
-                  <span className={`text-xs px-3 py-1 rounded-full ${
+                  <span className={`badge ${
                     b.paymentStatus === "paid"
-                      ? "bg-green-100 text-green-600"
-                      : "bg-gray-100 text-gray-600"
+                      ? "payment-paid"
+                      : "payment-unpaid"
                   }`}>
                     {b.paymentStatus}
                   </span>
@@ -138,7 +149,7 @@ function MyBookings() {
                 </div>
 
                 {/* ACTIONS */}
-                <div className="flex gap-2 mt-3">
+                <div className="actions-row">
 
                   {/* RECEIPT */}
                   {b.paymentStatus === "paid" && (
@@ -154,7 +165,7 @@ function MyBookings() {
                           }
                         })
                       }
-                      className="flex-1 bg-black text-white py-1 rounded hover:opacity-90"
+                      className="btn-receipt"
                     >
                       Receipt
                     </button>
@@ -164,7 +175,7 @@ function MyBookings() {
                   {b.bookingStatus !== "cancelled" && (
                     <button
                       onClick={() => handleCancel(b._id)}
-                      className="flex-1 bg-red-500 text-white py-1 rounded hover:bg-red-600"
+                      className="btn-cancel"
                     >
                       Cancel
                     </button>

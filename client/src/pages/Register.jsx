@@ -1,6 +1,7 @@
 import { useState } from "react";
 import API from "../services/api";
 import { useNavigate } from "react-router-dom";
+import "./Register.css";
 
 function Register() {
 
@@ -16,7 +17,11 @@ function Register() {
   });
 
   const [profileImage, setProfileImage] = useState(null);
-  const [serviceImages, setServiceImages] = useState([]);
+  
+  // Custom Pop-up states
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupType, setPopupType] = useState("success");
+  const [popupMessage, setPopupMessage] = useState("");
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -38,53 +43,53 @@ function Register() {
       formData.append("profileImage", profileImage);
     }
 
-    if (role !== "traveler") {
-      serviceImages.forEach(img =>
-        formData.append("serviceImages", img)
-      );
-    }
-
     try {
       await API.post("/auth/register", formData);
-      alert("Registered successfully 🎉");
-      navigate("/login");
+      setPopupType("success");
+      setPopupMessage("Registered successfully 🎉 Redirecting to login page...");
+      setShowPopup(true);
+      setTimeout(() => {
+        setShowPopup(false);
+        navigate("/login");
+      }, 2500);
     } catch (err) {
-      alert("Registration failed ❌");
+      setPopupType("error");
+      setPopupMessage(err.response?.data?.message || "Registration failed. Please check all fields.");
+      setShowPopup(true);
     }
 
   };
 
   return (
 
-    <div className="w-full bg-gradient-to-br from-rose-100 via-white to-orange-100">
+    <div className="register-container">
 
-      {/* ✅ NAVBAR SPACING FIX */}
-      <div className="h-[18vh]"></div>
+      <div className="register-spacing"></div>
 
-      <div className="min-h-[82vh] flex items-center justify-center px-4">
+      <div className="register-content">
 
         {/* GLASS CARD */}
-        <div className="w-full max-w-md backdrop-blur-xl bg-white/60 border border-white/40 shadow-2xl rounded-3xl p-8 transition-all duration-500 hover:shadow-rose-200">
+        <div className="register-card">
 
           {/* TITLE */}
-          <h2 className="text-3xl font-extrabold text-center text-gray-800 mb-2">
+          <h2 className="register-title">
             Create Account ✨
           </h2>
 
-          <p className="text-center text-gray-500 mb-6">
+          <p className="register-subtitle">
             Join Moulyas & start your journey
           </p>
 
 
           {/* FORM */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="register-form">
 
             <input
               name="name"
               placeholder="Full Name"
               onChange={handleChange}
               required
-              className="w-full px-4 py-3 rounded-xl bg-white/70 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-400 transition"
+              className="register-input"
             />
 
             <input
@@ -93,7 +98,7 @@ function Register() {
               placeholder="Email"
               onChange={handleChange}
               required
-              className="w-full px-4 py-3 rounded-xl bg-white/70 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-400 transition"
+              className="register-input"
             />
 
             <input
@@ -102,7 +107,7 @@ function Register() {
               placeholder="Password"
               onChange={handleChange}
               required
-              className="w-full px-4 py-3 rounded-xl bg-white/70 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-400 transition"
+              className="register-input"
             />
 
             <input
@@ -110,13 +115,13 @@ function Register() {
               placeholder="Phone Number"
               onChange={handleChange}
               required
-              className="w-full px-4 py-3 rounded-xl bg-white/70 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-400 transition"
+              className="register-input"
             />
 
             <select
               value={role}
               onChange={(e)=>setRole(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-white/70 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-400 transition"
+              className="register-input"
             >
               <option value="traveler">Traveler</option>
               <option value="hotel_owner">Hotel Owner</option>
@@ -126,7 +131,7 @@ function Register() {
               <option value="event_organizer">Event Organizer</option>
             </select>
 
-            <div className="text-sm text-gray-600">
+            <div className="image-upload-label">
               Profile Image
             </div>
 
@@ -134,27 +139,12 @@ function Register() {
               type="file"
               onChange={(e)=>setProfileImage(e.target.files[0])}
               required
-              className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-orange-500 file:text-white hover:file:bg-orange-600"
+              className="file-input"
             />
-
-            {role !== "traveler" && (
-              <>
-                <div className="text-sm text-gray-600">
-                  Service Images
-                </div>
-
-                <input
-                  type="file"
-                  multiple
-                  onChange={(e)=>setServiceImages(Array.from(e.target.files))}
-                  className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-rose-500 file:text-white hover:file:bg-rose-600"
-                />
-              </>
-            )}
 
             <button
               type="submit"
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-orange-500 to-rose-500 text-white font-semibold shadow-lg hover:scale-105 hover:shadow-xl transition-all duration-300"
+              className="register-btn"
             >
               Register
             </button>
@@ -163,11 +153,11 @@ function Register() {
 
 
           {/* FOOTER */}
-          <p className="text-center text-sm text-gray-500 mt-6">
+          <p className="register-footer">
             Already have an account?{" "}
             <span
               onClick={()=>navigate("/login")}
-              className="text-orange-500 font-semibold cursor-pointer hover:underline"
+              className="login-link"
             >
               Login
             </span>
@@ -177,6 +167,40 @@ function Register() {
 
       </div>
 
+      {/* CUSTOM POPUP MODAL */}
+      {showPopup && (
+        <div className="popup-overlay">
+          <div className="popup-modal">
+            <div className={`popup-icon-wrapper ${
+              popupType === "success" 
+                ? "popup-success-icon" 
+                : "popup-error-icon"
+            }`}>
+              {popupType === "success" ? "🎉" : "❌"}
+            </div>
+            
+            <h3 className="popup-title">
+              {popupType === "success" ? "Success!" : "Failed!"}
+            </h3>
+            
+            <p className="popup-desc">
+              {popupMessage}
+            </p>
+            
+            {popupType === "success" ? (
+              <div className="popup-loader"></div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowPopup(false)}
+                className="popup-close-btn"
+              >
+                Try Again
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
 
   );

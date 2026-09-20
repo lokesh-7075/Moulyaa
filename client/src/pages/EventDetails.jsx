@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import API from "../services/api";
 
+import { getServiceImage } from "../services/imageHelper";
+
 function EventDetails(){
 
   const { id } = useParams();
@@ -13,19 +15,11 @@ function EventDetails(){
 
   const user = JSON.parse(localStorage.getItem("user") || "null");
 
-  const BASE_URL = "http://localhost:5000";
-
   // =========================
   // IMAGE FIX
   // =========================
-  const getImageUrl = (path) => {
-    if (!path) return "https://via.placeholder.com/400";
-
-    const cleanPath = path
-      ?.replace(/^\/+/, "")
-      ?.replace(/^uploads\//, "");
-
-    return `${BASE_URL}/uploads/${cleanPath}`;
+  const getImageUrl = (path, cat = "event") => {
+    return getServiceImage(path, cat);
   };
 
   // ✅ SAFE DATE FORMAT

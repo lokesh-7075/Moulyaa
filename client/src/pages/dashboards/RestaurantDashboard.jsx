@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../../services/api";
+import "./RestaurantDashboard.css";
 
 function RestaurantDashboard(){
 
@@ -17,17 +18,14 @@ function RestaurantDashboard(){
 
   // ✅ IMAGE FIX (NO DUPLICATES)
   const getImage = (path)=>{
-    if(!path) return "https://via.placeholder.com/300";
-
+    if(!path) return "https://cdn-icons-png.flaticon.com/512/847/847969.png";
     if(path.startsWith("http")) return path;
-
-    const clean = path.replace(/\\/g,"/").replace(/^\/+/,"");
-
-    if(clean.startsWith("uploads")){
-      return `${BASE_URL}/${clean}`;
+    const clean = path.replace(/\\/g,"/");
+    const index = clean.indexOf("uploads/");
+    if(index !== -1){
+      return `${BASE_URL}/${clean.substring(index)}`;
     }
-
-    return `${BASE_URL}/uploads/${clean}`;
+    return `${BASE_URL}/uploads/${clean.replace(/^\/+/,"")}`;
   };
 
   // ================= FETCH =================
@@ -42,7 +40,7 @@ function RestaurantDashboard(){
       }
 
       const res = await API.get("/foods/my-foods");
-      setFoods(res.data || []);
+      setFoods(Array.isArray(res.data) ? res.data : []);
 
     }catch(err){
 
@@ -51,7 +49,8 @@ function RestaurantDashboard(){
         return;
       }
 
-      console.error(err);
+      console.warn("Restaurant foods fetch notice:", err.message);
+      setFoods([]);
 
     }finally{
       setLoading(false);
@@ -66,7 +65,8 @@ function RestaurantDashboard(){
 
       const res = await API.get(`/bookings/food/${foodId}`);
 
-      const data = res.data || [];
+      const raw = res.data?.bookings || res.data;
+      const data = Array.isArray(raw) ? raw : [];
 
       const enriched = data.map(b=>({
         ...b,
@@ -82,6 +82,15 @@ function RestaurantDashboard(){
       console.error(err);
     }
   };
+
+  // Load bookings whenever foods list changes
+  useEffect(()=>{
+    if(foods.length > 0){
+      foods.forEach(f => {
+        loadBookings(f._id);
+      });
+    }
+  },[foods]);
 
   // ================= ACTIONS =================
   const deleteFood = async(id)=>{
@@ -109,42 +118,53 @@ function RestaurantDashboard(){
     );
   }
 
+  // Calculations
+  const allOrders = Object.values(bookings).flat();
+  const totalOrders = allOrders.length;
+  const totalRevenue = allOrders.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
+  const totalEarnings = allOrders.reduce((sum, b) => sum + (b.myShare || 0), 0);
+
   return(
 
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 p-6">
+    <div className="restaurant-dashboard-container">
 
-      {/* HEADER */}
-      <div className="flex justify-between items-center mb-8 bg-white/60 backdrop-blur-xl p-4 rounded-2xl shadow">
+      {/* ================= HEADER ================= */}
+      <div className="restaurant-header">
 
-        <h1 className="text-3xl font-bold text-pink-600">
-          🍽 Restaurant Dashboard
-        </h1>
+        <div className="logo-section">
+          <h1 className="restaurant-title">
+            Moulyas Restaurant 🍽
+          </h1>
+          <p className="restaurant-subtitle">Manage your food menu, track customer orders & monitor restaurant earnings</p>
+        </div>
 
         {/* PROFILE */}
-        <div className="relative">
+        <div className="profile-container">
 
           <img
             src={getImage(user?.profileImage)}
-            onError={(e)=>{
-              e.target.src = "https://cdn-icons-png.flaticon.com/512/847/847969.png";
-            }}
+            className="profile-avatar"
             onClick={()=>setOpen(!open)}
-            className="w-12 h-12 rounded-full cursor-pointer border hover:scale-110 transition object-cover"
           />
 
           {open && (
-            <div className="absolute right-0 mt-3 bg-white p-4 rounded-xl shadow w-60">
-
-              <p className="font-semibold">{user.name}</p>
-              <p className="text-sm text-gray-500">{user.email}</p>
-
+            <div className="profile-dropdown">
+              <div className="dropdown-user-info">
+                <img
+                  src={getImage(user?.profileImage)}
+                  className="dropdown-user-img"
+                />
+                <div className="dropdown-user-details">
+                  <p className="dropdown-user-name">{user?.name}</p>
+                  <p className="dropdown-user-email">{user?.email}</p>
+                </div>
+              </div>
               <button
                 onClick={logout}
-                className="mt-3 w-full bg-red-500 text-white py-1 rounded hover:bg-red-600"
+                className="logout-btn"
               >
                 Logout
               </button>
-
             </div>
           )}
 
@@ -152,133 +172,146 @@ function RestaurantDashboard(){
 
       </div>
 
-      {/* ADD FOOD */}
-      <button
-        onClick={()=>navigate("/add-food")}
-        className="mb-6 px-6 py-2 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-xl shadow hover:scale-105 transition"
-      >
-        + Add Food 💖
-      </button>
-
-      {/* GRID */}
-      <div className="grid md:grid-cols-3 gap-8">
-
-        {foods.map(food=>{
-
-          const foodBookings = bookings[food._id] || [];
-
-          return(
-
-            <div
-              key={food._id}
-              className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl p-4 hover:shadow-2xl hover:-translate-y-1 transition"
+      {/* ================= ANALYTICS ================= */}
+      {foods.length > 0 && (
+        <div className="stats-grid">
+          {[
+            {title:"Total Orders",value:totalOrders,desc:"Food reservations booked",colors:{start:"#f97316",end:"#f59e0b"},icon:"🍔"},
+            {title:"Total Sales",value:`₹${totalRevenue}`,desc:"Gross restaurant earnings",colors:{start:"#f43f5e",end:"#ec4899"},icon:"💸"},
+            {title:"Your Share (75%)",value:`₹${totalEarnings}`,desc:"Net profit after service fee",colors:{start:"#10b981",end:"#0d9488"},icon:"📈"}
+          ].map((card,i)=>(
+            <div key={i}
+              className="stat-card"
+              style={{
+                "--gradient-start": card.colors.start,
+                "--gradient-end": card.colors.end
+              }}
             >
-
-              {/* IMAGE */}
-              <img
-                src={getImage(food.foodImages?.[0])}
-                onError={(e)=>{
-                  e.target.src = "https://via.placeholder.com/300";
-                }}
-                className="h-40 w-full object-cover rounded-xl"
-              />
-
-              {/* INFO */}
-              <h3 className="font-bold mt-3 text-lg">
-                {food.foodName}
-              </h3>
-
-              <p className="text-sm text-gray-500">
-                {food.category}
-              </p>
-
-              <p className="text-pink-600 font-bold">
-                ₹{food.price}
-              </p>
-
-              <p className={`text-sm ${
-                food.availability ? "text-green-600" : "text-red-500"
-              }`}>
-                {food.availability ? "Available" : "Unavailable"}
-              </p>
-
-              {/* ACTIONS */}
-              <div className="flex gap-2 mt-3">
-
-                <button
-                  onClick={()=>toggleAvailability(food)}
-                  className="flex-1 bg-yellow-400 text-white py-1 rounded hover:bg-yellow-500"
-                >
-                  Toggle
-                </button>
-
-                <button
-                  onClick={()=>deleteFood(food._id)}
-                  className="flex-1 bg-red-500 text-white py-1 rounded hover:bg-red-600"
-                >
-                  Delete
-                </button>
-
+              <div className="stat-card-top">
+                <div>
+                  <p className="stat-card-title">{card.title}</p>
+                  <h2 className="stat-card-value">{card.value}</h2>
+                </div>
+                <span className="stat-card-icon">{card.icon}</span>
               </div>
+              <p className="stat-card-desc">{card.desc}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
-              {/* VIEW ORDERS */}
-              <button
-                onClick={()=>navigate("/restaurant-orders")}
-                className="mt-3 w-full bg-green-500 text-white py-1 rounded hover:bg-green-600"
-              >
-                View All Orders 🍽
-              </button>
+      {/* ================= ACTIONS & FOOD ITEMS ================= */}
+      <div className="menu-section-header">
+        <h2 className="menu-section-title">🍲 Restaurant Menu</h2>
+        
+        <div className="action-buttons-group">
+          <button
+            onClick={()=>navigate("/restaurant-orders")}
+            className="view-orders-btn"
+          >
+            📋 View Orders
+          </button>
+          <button
+            onClick={()=>navigate("/add-food")}
+            className="add-food-btn"
+          >
+            + Add Food Item
+          </button>
+        </div>
+      </div>
 
-              {/* BOOKINGS LIST */}
-              {foodBookings.length > 0 && (
+      {foods.length === 0 ? (
+        <div className="no-food-card">
+          <span className="no-food-icon">🍲</span>
+          <h2 className="no-food-title">No Food Listed</h2>
+          <p className="no-food-desc">Get started by listing your restaurant's delicious dishes!</p>
+          <button
+            onClick={() => navigate("/add-food")}
+            className="create-food-btn"
+          >
+            Add Your First Food Item
+          </button>
+        </div>
+      ) : (
+        <div className="menu-grid">
+          {foods.map(food=>{
+            const foodBookings = bookings[food._id] || [];
 
-                <div className="mt-4 space-y-2">
-
-                  {foodBookings.map(b=>(
-
-                    <div key={b._id} className="bg-white p-2 rounded shadow text-sm">
-
-                      <p className="font-semibold">
-                        {b.travelerId?.name}
-                      </p>
-
-                      <p className="text-gray-500">
-                        {b.travelerId?.email}
-                      </p>
-
-                      <p>₹{b.totalAmount}</p>
-
-                      <p className="text-green-600">
-                        Your Share: ₹{b.myShare}
-                      </p>
-
-                      <p className={`text-xs ${
-                        b.paymentStatus === "paid"
-                          ? "text-green-600"
-                          : "text-red-500"
-                      }`}>
-                        Payment: {b.paymentStatus}
-                      </p>
-
-                      <p className="text-xs text-blue-500">
-                        {b.bookingStatus}
-                      </p>
-
-                    </div>
-
-                  ))}
-
+            return(
+              <div key={food._id} className="menu-card">
+                {/* IMAGE */}
+                <div className="menu-card-img-wrapper">
+                  <img
+                    src={getImage(food.foodImages?.[0])}
+                    onError={(e)=>{
+                      e.target.src = "https://via.placeholder.com/300";
+                    }}
+                    className="menu-card-img"
+                  />
+                  <span className="menu-card-price">
+                    ₹{food.price}
+                  </span>
                 </div>
 
-              )}
+                {/* INFO */}
+                <h3 className="menu-card-name">
+                  {food.foodName}
+                </h3>
 
-            </div>
+                <div className="menu-card-meta">
+                  <p className="menu-card-category">
+                    {food.category}
+                  </p>
+                  <span className={`menu-card-status ${
+                    food.availability ? "status-instock" : "status-soldout"
+                  }`}>
+                    {food.availability ? "In Stock" : "Sold Out"}
+                  </span>
+                </div>
 
-          )
+                {/* ACTIONS */}
+                <div className="menu-card-actions">
+                  <button
+                    onClick={()=>toggleAvailability(food)}
+                    className="toggle-availability-btn"
+                  >
+                    Toggle Stock
+                  </button>
 
-        })}
+                  <button
+                    onClick={()=>deleteFood(food._id)}
+                    className="delete-food-btn"
+                  >
+                    Delete Item
+                  </button>
+                </div>
 
-      </div>
+                {/* BOOKINGS LIST */}
+                {foodBookings.length > 0 && (
+                  <div className="recent-orders-section">
+                    <p className="recent-orders-title">Recent Food Orders</p>
+                    <div className="recent-orders-list">
+                      {foodBookings.map(b=>(
+                        <div key={b._id} className="recent-order-item">
+                          <div className="recent-order-header">
+                            <span className="recent-order-name">{b.travelerId?.name}</span>
+                            <span className="recent-order-share">₹{b.myShare}</span>
+                          </div>
+                          <div className="recent-order-meta">
+                            <span>Status: {b.bookingStatus}</span>
+                            <span>Payment: {b.paymentStatus}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            )
+          })}
+        </div>
+      )}
 
     </div>
 

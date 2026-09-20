@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import API from "../services/api";
 
+import { getServiceImage } from "../services/imageHelper";
+
 function GuideDetails() {
 
   const { id } = useParams();
@@ -15,21 +17,11 @@ function GuideDetails() {
 
   const user = JSON.parse(localStorage.getItem("user") || "null");
 
-  const BASE_URL = "http://localhost:5000";
-
   // =========================
   // IMAGE FIX
   // =========================
-  const getImageUrl = (path) => {
-    if (!path) return "https://via.placeholder.com/400";
-
-    let clean = path.replace(/\\/g,"/").replace(/^\/+/,"");
-
-    if(!clean.startsWith("uploads/")){
-      clean = "uploads/" + clean;
-    }
-
-    return `${BASE_URL}/${clean}`;
+  const getImageUrl = (path, cat = "guide") => {
+    return getServiceImage(path, cat);
   };
 
   // =========================
@@ -41,13 +33,17 @@ function GuideDetails() {
       try {
 
         const guideRes = await API.get(`/guides/${id}`);
-        setGuide(guideRes.data);
+        if (guideRes.data) setGuide(guideRes.data);
 
         const postRes = await API.get(`/guide-posts/${id}`);
-        setPosts(postRes.data || []);
+        if (Array.isArray(postRes.data)) {
+          setPosts(postRes.data);
+        } else {
+          setPosts([]);
+        }
 
       } catch (err) {
-        console.error(err);
+        console.warn("Guide details fetch notice:", err.message);
       }
     };
 
@@ -225,13 +221,13 @@ function GuideDetails() {
             📸 Tour Experiences
           </h2>
 
-          {posts.length === 0 && (
+          {(!Array.isArray(posts) || posts.length === 0) && (
             <p className="text-gray-500">No posts yet</p>
           )}
 
           <div className="grid md:grid-cols-3 gap-6">
 
-            {posts.map((p) => (
+            {(Array.isArray(posts) ? posts : []).map((p) => (
 
               <div
                 key={p._id}

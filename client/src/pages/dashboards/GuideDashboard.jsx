@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../../services/api";
+import "./GuideDashboard.css";
 
 function GuideDashboard() {
 
@@ -19,16 +20,13 @@ function GuideDashboard() {
   // ================= IMAGE FIX =================
   const getImage = (path)=>{
     if(!path) return "https://cdn-icons-png.flaticon.com/512/847/847969.png";
-
     if(path.startsWith("http")) return path;
-
-    let clean = path.replace(/\\/g,"/").replace(/^\/+/,"");
-
-    if(!clean.startsWith("uploads")){
-      clean = "uploads/" + clean;
+    const clean = path.replace(/\\/g,"/");
+    const index = clean.indexOf("uploads/");
+    if(index !== -1){
+      return `${BASE_URL}/${clean.substring(index)}`;
     }
-
-    return `${BASE_URL}/${clean}`;
+    return `${BASE_URL}/uploads/${clean.replace(/^\/+/,"")}`;
   };
 
   // ================= DATE FIX =================
@@ -64,7 +62,7 @@ function GuideDashboard() {
   const fetchBookings = async ()=>{
     try{
       const res = await API.get("/guides/my-bookings");
-      setBookings(res.data || []);
+      setBookings(Array.isArray(res.data) ? res.data : []);
     }catch{
       setBookings([]);
     }
@@ -73,7 +71,7 @@ function GuideDashboard() {
   const fetchPosts = async (guideId)=>{
     try{
       const res = await API.get(`/guide-posts/${guideId}`);
-      setPosts(res.data || []);
+      setPosts(Array.isArray(res.data) ? res.data : []);
     }catch{
       setPosts([]);
     }
@@ -123,47 +121,45 @@ function GuideDashboard() {
 
   return(
 
-    <div className="min-h-screen bg-white p-6">
+    <div className="guide-dashboard-container">
 
-      {/* HEADER */}
-      <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow">
+      {/* ================= HEADER ================= */}
+      <div className="guide-header">
 
-        <h1 className="text-3xl font-extrabold text-pink-600">
-          Moulyas ✨
-        </h1>
+        <div className="logo-section">
+          <h1 className="guide-title">
+            Moulyas Tour Guide 🧭
+          </h1>
+          <p className="guide-subtitle">Manage availability, view traveler bookings & edit posts</p>
+        </div>
 
-        <div className="relative">
+        {/* PROFILE */}
+        <div className="profile-container">
 
           <img
             src={getImage(user?.profileImage)}
-            onError={(e)=>{
-              e.target.src = "https://cdn-icons-png.flaticon.com/512/847/847969.png";
-            }}
-            className="w-12 h-12 rounded-full cursor-pointer border hover:scale-110 transition object-cover"
+            className="profile-avatar"
             onClick={()=>setOpen(!open)}
           />
 
           {open && (
-            <div className="absolute right-0 mt-3 w-64 bg-white rounded-xl shadow p-4">
-
-              <div className="flex gap-3 mb-3">
+            <div className="profile-dropdown">
+              <div className="dropdown-user-info">
                 <img
                   src={getImage(user?.profileImage)}
-                  className="w-12 h-12 rounded-full object-cover"
+                  className="dropdown-user-img"
                 />
-                <div>
-                  <p className="font-semibold">{user?.name}</p>
-                  <p className="text-sm text-gray-500">{user?.email}</p>
+                <div className="dropdown-user-details">
+                  <p className="dropdown-user-name">{user?.name}</p>
+                  <p className="dropdown-user-email">{user?.email}</p>
                 </div>
               </div>
-
               <button
                 onClick={logout}
-                className="w-full text-red-500 hover:bg-red-50 p-2 rounded-lg"
+                className="logout-btn"
               >
                 Logout
               </button>
-
             </div>
           )}
 
@@ -171,63 +167,72 @@ function GuideDashboard() {
 
       </div>
 
-      {/* STATS */}
-      <div className="grid md:grid-cols-3 gap-6 mb-10">
-
-        {[
-          {title:"Bookings",value:totalBookings},
-          {title:"Revenue",value:`₹${totalRevenue}`},
-          {title:"Your Share",value:`₹${myShare}`}
-        ].map((card,i)=>(
-          <div key={i}
-            className="bg-white border p-6 rounded-xl shadow hover:shadow-lg transition"
-          >
-            <p className="text-gray-500">{card.title}</p>
-            <h2 className="text-3xl font-bold text-gray-800">{card.value}</h2>
-          </div>
-        ))}
-
-      </div>
-
-      {/* GUIDE PROFILE */}
+      {/* ================= STATS ================= */}
       {guide && (
-        <div className="bg-white p-6 rounded-xl shadow flex gap-6 mb-10">
+        <div className="stats-grid">
+
+          {[
+            {title:"Tour Bookings",value:totalBookings,desc:"Total reservations received",colors:{start:"#4f46e5",end:"#3730a3"},icon:"📅"},
+            {title:"Gross Earnings",value:`₹${totalRevenue}`,desc:"Total customer billing amount",colors:{start:"#0d9488",end:"#0f766e"},icon:"💰"},
+            {title:"Your Share (75%)",value:`₹${myShare}`,desc:"Net profit after service fee",colors:{start:"#db2777",end:"#b5179e"},icon:"📈"}
+          ].map((card,i)=>(
+            <div key={i}
+              className="stat-card"
+              style={{
+                "--gradient-start": card.colors.start,
+                "--gradient-end": card.colors.end
+              }}
+            >
+              <div className="stat-card-top">
+                <div>
+                  <p className="stat-card-title">{card.title}</p>
+                  <h2 className="stat-card-value">{card.value}</h2>
+                </div>
+                <span className="stat-card-icon">{card.icon}</span>
+              </div>
+              <p className="stat-card-desc">{card.desc}</p>
+            </div>
+          ))}
+
+        </div>
+      )}
+
+      {/* ================= PROFILE BILLBOARD ================= */}
+      {guide && (
+        <div className="profile-billboard">
 
           <img
             src={getImage(guide.images?.[0])}
-            className="w-40 h-40 object-cover rounded-xl"
+            className="profile-billboard-img"
           />
 
-          <div>
-            <h3 className="text-2xl font-bold">{guide.guideName}</h3>
-            <p className="text-gray-500">📍 {guide.location}</p>
-            <p>💬 {guide.languages?.join(", ")}</p>
-            <p>🧠 {guide.experience} yrs</p>
+          <div className="profile-billboard-info">
+            <span className="profile-billboard-tag">Guide Profile</span>
+            <h3 className="profile-billboard-name">{guide.guideName}</h3>
+            
+            <div className="profile-billboard-meta">
+              <p>📍 {guide.location}</p>
+              <p>💬 {guide.languages?.join(", ")}</p>
+              <p>🧠 {guide.experience} Years Exp.</p>
+              <p className="guide-rate">₹{guide.pricePerDay}/Day</p>
+            </div>
 
-            <p className="text-orange-600 font-bold mt-2">
-              ₹{guide.pricePerDay}/day
-            </p>
-
-            <div className="flex gap-3 mt-3">
-
+            <div className="profile-billboard-actions">
               <button
                 onClick={() => navigate(`/edit-guide/${guide._id}`)}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg"
+                className="edit-profile-btn"
               >
-                Edit Guide
+                Edit Profile
               </button>
 
               <button
                 onClick={toggleAvailability}
-                className={`px-4 py-2 rounded ${
-                  guide.availability
-                    ? "bg-green-500 text-white"
-                    : "bg-red-500 text-white"
+                className={`availability-toggle-btn ${
+                  guide.availability ? "toggle-active" : "toggle-offline"
                 }`}
               >
-                {guide.availability ? "Available" : "Unavailable"}
+                {guide.availability ? "Active Availability" : "Offline Status"}
               </button>
-
             </div>
 
           </div>
@@ -235,102 +240,85 @@ function GuideDashboard() {
         </div>
       )}
 
-      {/* BOOKINGS */}
-      <div className="mb-10">
+      {/* ================= BOOKINGS ================= */}
+      <div className="bookings-section">
+        <h2 className="bookings-title">📅 Tour Bookings</h2>
 
-        <h2 className="text-2xl font-bold mb-5">📅 Bookings</h2>
+        {bookings.length === 0 ? (
+          <p className="no-bookings">No client reservations received yet.</p>
+        ) : (
+          <div className="bookings-grid">
+            {bookings.map(b=>(
+              <div key={b._id} className="booking-card">
+                <div className="booking-card-header">
+                  <p className="booking-card-name">{b.travelerId?.name}</p>
+                  <span className={`booking-card-status ${
+                    b.paymentStatus === "paid"
+                      ? "status-paid"
+                      : "status-pending"
+                  }`}>
+                    {b.paymentStatus}
+                  </span>
+                </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
+                <p className="booking-card-date">📅 Tour Date: {formatDate(b.travelDate)}</p>
+                <p className="booking-card-people">👥 Group Size: {b.numberOfPeople} People</p>
 
-          {bookings.map(b=>(
-
-            <div key={b._id}
-              className="bg-white border p-5 rounded-xl shadow hover:shadow-lg transition"
-            >
-              <p className="font-bold">{b.travelerId?.name}</p>
-
-              {/* ✅ FIXED DATE */}
-              <p className="text-gray-500 text-sm">
-                {formatDate(b.travelDate)}
-              </p>
-
-              <p>👥 {b.numberOfPeople}</p>
-
-              <p className="text-orange-600 font-bold">
-                ₹{b.totalAmount}
-              </p>
-
-              <p className="text-green-600 text-sm">
-                Your Share: ₹{Math.floor(b.totalAmount * 0.75)}
-              </p>
-
-              <p className={`text-xs mt-1 ${
-                b.paymentStatus === "paid"
-                  ? "text-green-600"
-                  : "text-red-500"
-              }`}>
-                {b.paymentStatus}
-              </p>
-
-            </div>
-
-          ))}
-
-        </div>
-
+                <div className="booking-card-footer">
+                  <div>
+                    <p className="booking-card-meta-label">Customer Paid</p>
+                    <p className="booking-card-meta-val">₹{b.totalAmount}</p>
+                  </div>
+                  <div>
+                    <p className="share-label">Your Share (75%)</p>
+                    <p className="share-val">₹{Math.floor(b.totalAmount * 0.75)}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* POSTS */}
-      <div className="bg-white p-6 rounded-xl shadow">
+      {/* ================= POSTS ================= */}
+      <div className="feed-section">
 
-        <div className="flex justify-between items-center mb-6">
-
-          <h2 className="text-2xl font-bold text-gray-800">
-            📸 My Posts
-          </h2>
+        <div className="feed-header">
+          <div className="feed-header-left">
+            <h2 className="feed-title">📸 My Interactive Feed</h2>
+            <p className="feed-subtitle">Upload posts and tour highlights for travelers to see.</p>
+          </div>
 
           <button
             onClick={() => navigate("/create-guide-post")}
-            className="bg-pink-500 text-white px-4 py-2 rounded-lg shadow"
+            className="add-feed-btn"
           >
-            + Add Guide Post
+            + Add Feed Post
           </button>
-
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-
+        <div className="feed-grid">
           {posts.length > 0 ? (
             posts.map(p=>(
-
-              <div key={p._id}
-                className="border rounded-xl overflow-hidden hover:shadow-lg transition"
-              >
-
-                <img
-                  src={getImage(p.images?.[0])}
-                  className="w-full h-48 object-cover"
-                />
-
-                <div className="p-4 bg-white">
-                  <h3 className="font-semibold">{p.title}</h3>
-
-                  {/* ✅ FIXED DATE */}
-                  <p className="text-sm text-gray-500">
-                    {formatDate(p.createdAt)}
-                  </p>
-
+              <div key={p._id} className="feed-card">
+                <div className="feed-card-img-wrapper">
+                  <img
+                    src={getImage(p.images?.[0])}
+                    className="feed-card-img"
+                  />
                 </div>
 
+                <div className="feed-card-content">
+                  <h3 className="feed-card-title">{p.title}</h3>
+                  <p className="feed-card-date">📅 Posted: {formatDate(p.createdAt)}</p>
+                </div>
               </div>
-
             ))
           ) : (
-            <p className="text-gray-500 col-span-3 text-center">
-              No posts yet 🚀
+            <p className="no-feed-posts">
+              No feed posts created yet. Keep your profile active!
             </p>
           )}
-
         </div>
 
       </div>

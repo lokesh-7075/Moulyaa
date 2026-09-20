@@ -76,19 +76,11 @@ const registerUser = async (req, res) => {
     ];
 
     if (providerRoles.includes(role)) {
-
-      if (serviceImages.length < 1) {
-        return res.status(400).json({
-          message: "At least 1 service image is required"
-        });
-      }
-
       if (serviceImages.length > 5) {
         return res.status(400).json({
           message: "Maximum 5 service images allowed"
         });
       }
-
     }
 
 

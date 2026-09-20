@@ -1,133 +1,97 @@
 import { useEffect, useState } from "react";
 import API from "../services/api";
 import { useNavigate } from "react-router-dom";
+import "./ListingPages.css";
+import { getServiceImage } from "../services/imageHelper";
+import { DEFAULT_GUIDES } from "../data/defaultCatalog";
 
-function Guides(){
-
-  const [guides,setGuides] = useState([]);
+function Guides() {
+  const [guides, setGuides] = useState(DEFAULT_GUIDES);
   const navigate = useNavigate();
 
-  const BASE_URL = "http://localhost:5000";
-
-  // ✅ SAFE IMAGE FIX
-  const getImageUrl = (path) => {
-    if (!path) return "https://via.placeholder.com/200";
-
-    const cleanPath = path
-      .replace(/^\/+/, "")
-      .replace(/^uploads\//, "");
-
-    return `${BASE_URL}/uploads/${cleanPath}`;
-  };
-
-  useEffect(()=>{
-
-    const fetchGuides = async()=>{
-
-      try{
+  useEffect(() => {
+    const fetchGuides = async () => {
+      try {
         const res = await API.get("/guides");
-        setGuides(res.data);
+        if (Array.isArray(res.data) && res.data.length > 0) {
+          setGuides(res.data);
+        } else if (res.data && Array.isArray(res.data.guides) && res.data.guides.length > 0) {
+          setGuides(res.data.guides);
+        } else {
+          setGuides(DEFAULT_GUIDES);
+        }
+      } catch (err) {
+        console.warn("Guides live fetch notice (using catalog):", err.message);
+        setGuides(DEFAULT_GUIDES);
       }
-      catch(err){
-        console.error(err);
-      }
-
     };
 
     fetchGuides();
+  }, []);
 
-  },[]);
+  const safeGuides = Array.isArray(guides) ? guides : DEFAULT_GUIDES;
 
-
-  return(
-
-    <div className="w-full bg-gradient-to-b from-gray-50 to-white">
-
-      {/* ✅ SPACING FIX (IMPORTANT 🔥) */}
-      <div className="h-[18vh]"></div>
+  return (
+    <div className="listing-container">
+      <div className="listing-spacing"></div>
 
       {/* HEADER */}
-      <div className="max-w-6xl mx-auto px-6 mb-10">
-
-        <h1 className="text-3xl md:text-4xl font-bold">
-          🧭 Explore Tour Guides
+      <div className="listing-header">
+        <h1 className="listing-title">
+          🧭 Explore Certified Tour Guides
         </h1>
-
-        <p className="text-gray-500 mt-2">
-          Find expert guides for your journey ✨
+        <p className="listing-subtitle">
+          Find authenticated regional experts & heritage scholars ✨
         </p>
-
       </div>
 
       {/* GRID */}
-      <div className="max-w-6xl mx-auto px-6 pb-10 grid sm:grid-cols-2 md:grid-cols-3 gap-6">
-
-        {guides.map(guide=>(
-
+      <div className="listing-grid">
+        {safeGuides.map(guide => (
           <div
-            key={guide._id}
-            className="
-              bg-white/70 backdrop-blur-lg
-              rounded-2xl shadow-md
-              hover:shadow-2xl transition duration-300
-              overflow-hidden group cursor-pointer
-            "
+            key={guide._id || guide.id}
+            onClick={() => navigate(`/guide/${guide._id || guide.id}`)}
+            className="listing-card"
           >
-
             {/* IMAGE */}
-            <div className="overflow-hidden">
+            <div className="card-img-wrapper">
               <img
-                src={getImageUrl(guide.images?.[0])}
-                className="h-44 w-full object-cover group-hover:scale-110 transition duration-500"
+                src={getServiceImage(guide.images, "guide")}
+                alt={guide.guideName}
+                className="card-img"
               />
+              <span className="card-price-tag">
+                ₹{guide.pricePerDay}/day
+              </span>
             </div>
 
             {/* CONTENT */}
-            <div className="p-4">
-
-              <h2 className="text-lg font-bold group-hover:text-orange-600 transition">
+            <div className="card-content">
+              <h2 className="card-title">
                 {guide.guideName}
               </h2>
 
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="card-meta">
                 📍 {guide.location}
               </p>
 
-              <p className="text-sm">
-                Experience: {guide.experience} years
-              </p>
+              {guide.experience && (
+                <p className="card-desc">
+                  🎖️ Experience: {guide.experience} years
+                </p>
+              )}
 
-              <p className="text-sm">
-                Languages: {guide.languages?.join(", ")}
-              </p>
-
-              <p className="text-orange-600 font-bold mt-2">
-                ₹{guide.pricePerDay}/day
-              </p>
-
-              <button
-                onClick={()=>navigate(`/guide/${guide._id}`)}
-                className="
-                  mt-3 w-full py-2 rounded-xl
-                  bg-orange-500 text-white
-                  hover:bg-orange-600 transition
-                "
-              >
-                View Details
-              </button>
-
+              {guide.languages && (
+                <p className="card-desc">
+                  🗣️ Languages: {Array.isArray(guide.languages) ? guide.languages.join(", ") : guide.languages}
+                </p>
+              )}
             </div>
-
           </div>
-
         ))}
-
       </div>
-
     </div>
-
-  )
-
+  );
 }
 
 export default Guides;

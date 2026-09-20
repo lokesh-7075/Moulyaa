@@ -16,17 +16,19 @@ function EventBookings(){
 
       const res = await API.get("/bookings/provider");
 
-      const data = res.data?.bookings || res.data || [];
+      const rawData = res.data?.bookings || res.data;
+      const data = Array.isArray(rawData) ? rawData : [];
 
       // 🔥 only event bookings
       const eventBookings = data.filter(
-        b => b.serviceType === "event"
+        b => b && b.serviceType === "event"
       );
 
       setBookings(eventBookings);
 
     }catch(err){
-      console.error(err);
+      console.warn("Event bookings fetch notice:", err.message);
+      setBookings([]);
     }finally{
       setLoading(false);
     }

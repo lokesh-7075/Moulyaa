@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import API from "../services/api";
+import "./Users.css";
 
 function Users(){
 
@@ -18,8 +19,12 @@ function Users(){
     // ✅ fix windows slashes
     const cleanPath = path.replace(/\\/g,"/");
 
-    // ✅ DO NOT replace profiles → uploads (your backend already handles it)
-    return `${BASE_URL}/${cleanPath}`;
+    // Check if cleanPath already contains uploads/
+    const index = cleanPath.indexOf("uploads/");
+    if(index !== -1){
+      return `${BASE_URL}/${cleanPath.substring(index)}`;
+    }
+    return `${BASE_URL}/uploads/${cleanPath}`;
   };
 
   // ================= ROLE FORMAT =================
@@ -83,29 +88,26 @@ function Users(){
 
   // ================= UNIQUE ROLES =================
   const roles = ["all", ...new Set(users.map(u=>u.role))];
-
   return(
 
-    <div className="min-h-screen p-8 bg-gradient-to-br from-orange-50 via-white to-pink-50">
+    <div className="users-container">
 
       {/* ================= HEADER ================= */}
-      <h1 className="text-3xl font-extrabold mb-6 bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
-        👥 Users Management
-      </h1>
+      <div className="users-header">
+        <h1 className="users-title">
+          👥 Travelers & Users Management
+        </h1>
+        <p className="users-subtitle">Audit registered accounts, assign/revoke privileges, or terminate profiles.</p>
+      </div>
 
       {/* ================= FILTER BAR ================= */}
-      <div className="flex flex-col md:flex-row gap-4 mb-8 items-center">
+      <div className="filter-bar">
 
         {/* SEARCH */}
         <input
           type="text"
           placeholder="🔍 Search name, email or role..."
-          className="
-            w-full md:w-96 px-4 py-3 rounded-xl
-            bg-white/60 backdrop-blur-xl
-            border border-white/30 shadow
-            focus:outline-none focus:ring-2 focus:ring-orange-400
-          "
+          className="search-input"
           onChange={(e)=>setSearch(e.target.value)}
         />
 
@@ -113,23 +115,18 @@ function Users(){
         <select
           value={selectedRole}
           onChange={(e)=>setSelectedRole(e.target.value)}
-          className="
-            px-4 py-3 rounded-xl
-            bg-white/60 backdrop-blur-xl
-            border border-white/30 shadow
-            focus:outline-none
-          "
+          className="role-select"
         >
           {roles.map(role=>(
             <option key={role} value={role}>
-              {role === "all" ? "All Roles" : formatRole(role)}
+              {role === "all" ? "All Account Types" : formatRole(role)}
             </option>
           ))}
         </select>
 
         {/* COUNT */}
-        <span className="text-gray-500 text-sm">
-          Showing: {filteredUsers.length}
+        <span className="filter-count">
+          Filtered Accounts: {filteredUsers.length}
         </span>
 
       </div>
@@ -137,74 +134,63 @@ function Users(){
       {/* ================= USERS ================= */}
       {Object.keys(groupedUsers).map(role=>(
 
-        <div key={role} className="mb-12">
+        <div key={role} className="role-section">
 
           {/* ROLE TITLE */}
-          <h2 className="text-xl font-bold mb-5 text-orange-600 capitalize">
-            {formatRole(role)}
-          </h2>
+          <div className="role-section-header">
+            <h2 className="role-section-title">
+              {formatRole(role)}s
+            </h2>
+          </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="users-grid">
 
             {groupedUsers[role].map(user=>(
 
-              <div
-                key={user._id}
-                className="
-                  bg-white/60 backdrop-blur-xl
-                  border border-white/30
-                  rounded-2xl p-5 shadow-xl
-                  hover:shadow-2xl hover:-translate-y-1 transition
-                "
-              >
+              <div key={user._id} className="user-card">
 
                 {/* IMAGE */}
-                <div className="flex justify-center mb-3">
+                <div className="user-avatar-wrapper">
                   <img
                     src={getImage(user.profileImage)}
-                    className="w-16 h-16 rounded-full object-cover border-2 border-white shadow"
+                    onError={(e)=>{
+                      e.target.src = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+                    }}
+                    className="user-avatar"
                   />
                 </div>
 
                 {/* INFO */}
-                <h3 className="text-center font-bold text-lg">
+                <h3 className="user-name">
                   {user.name}
                 </h3>
 
-                <p className="text-center text-sm text-gray-500">
+                <p className="user-email">
                   {user.email}
                 </p>
 
-                <p className="text-center text-sm mt-1 font-medium text-blue-600">
-                  {formatRole(user.role)}
-                </p>
-
-                {/* STATUS */}
-                <div className="flex justify-center mt-2">
-                  <span className={`
-                    px-3 py-1 rounded-full text-xs font-semibold
-                    ${
-                      user.status === "approved"
-                        ? "bg-green-100 text-green-700"
-                        : user.status === "pending"
-                        ? "bg-yellow-100 text-yellow-700"
-                        : "bg-red-100 text-red-700"
-                    }
-                  `}>
+                <div className="user-badges">
+                  <span className={`badge ${
+                    user.status === "approved"
+                      ? "badge-approved"
+                      : user.status === "pending"
+                      ? "badge-pending"
+                      : "badge-rejected"
+                  }`}>
                     {user.status}
+                  </span>
+                  
+                  <span className="badge badge-role">
+                    {formatRole(user.role)}
                   </span>
                 </div>
 
                 {/* DELETE */}
                 <button
                   onClick={()=>deleteUser(user._id)}
-                  className="
-                    w-full mt-4 py-2 rounded-xl
-                    bg-red-500 text-white
-                    hover:bg-red-600 transition
-                  "
+                  className="delete-account-btn"
                 >
-                  Delete
+                  Delete Account
                 </button>
 
               </div>
@@ -219,9 +205,10 @@ function Users(){
 
       {/* EMPTY */}
       {filteredUsers.length === 0 && (
-        <p className="text-center text-gray-500 mt-10">
-          No users found
-        </p>
+        <div className="empty-users-card">
+          <span className="empty-icon">🤷‍♂️</span>
+          <p className="empty-text">No matching accounts found.</p>
+        </div>
       )}
 
     </div>

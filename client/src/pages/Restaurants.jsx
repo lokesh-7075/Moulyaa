@@ -1,106 +1,91 @@
 import { useEffect, useState } from "react";
 import API from "../services/api";
 import { useNavigate } from "react-router-dom";
+import "./ListingPages.css";
+import { getServiceImage } from "../services/imageHelper";
+import { DEFAULT_RESTAURANTS } from "../data/defaultCatalog";
 
 function Restaurants() {
-
-  const [restaurants, setRestaurants] = useState([]);
+  const [restaurants, setRestaurants] = useState(DEFAULT_RESTAURANTS);
   const navigate = useNavigate();
-
-  const BASE_URL = "http://localhost:5000";
-
-  // ✅ ONLY REAL IMAGE (NO DEFAULT)
-  const getImageUrl = (path) => {
-    if (!path) return null;
-
-    let clean = path.replace(/\\/g, "/").replace(/^\/+/, "");
-    return `${BASE_URL}/${clean}`;
-  };
 
   useEffect(() => {
     const fetchRestaurants = async () => {
       try {
         const res = await API.get("/restaurants");
-        setRestaurants(res.data || []);
+        if (Array.isArray(res.data) && res.data.length > 0) {
+          setRestaurants(res.data);
+        } else if (res.data && Array.isArray(res.data.restaurants) && res.data.restaurants.length > 0) {
+          setRestaurants(res.data.restaurants);
+        } else {
+          setRestaurants(DEFAULT_RESTAURANTS);
+        }
       } catch (err) {
-        console.error("Restaurant fetch error:", err);
+        console.warn("Restaurants live fetch notice (using catalog):", err.message);
+        setRestaurants(DEFAULT_RESTAURANTS);
       }
     };
 
     fetchRestaurants();
   }, []);
 
+  const safeRestaurants = Array.isArray(restaurants) ? restaurants : DEFAULT_RESTAURANTS;
+
   return (
+    <div className="listing-container">
+      <div className="listing-spacing" />
 
-    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-orange-50">
-
-      <div className="h-[16vh]" />
-
-      <div className="px-6 md:px-12 pb-16">
-
-        {/* HEADER */}
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-extrabold bg-gradient-to-r from-orange-500 to-rose-500 bg-clip-text text-transparent">
-            🍽 Restaurants
-          </h1>
-          <p className="text-gray-500 mt-3">
-            Discover flavors, romance & unforgettable dining ✨
-          </p>
-        </div>
-
-        {/* GRID */}
-        <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
-
-          {restaurants.map((r) => {
-
-            const image = getImageUrl(r.images?.[0]);
-
-            return(
-
-              <div
-                key={r._id}
-                onClick={() => navigate(`/restaurant/${r._id}`)}
-                className="group cursor-pointer rounded-3xl bg-white/60 backdrop-blur-xl shadow-lg hover:shadow-2xl transition hover:-translate-y-2 overflow-hidden"
-              >
-
-                {/* ✅ SHOW ONLY IF IMAGE EXISTS */}
-                {image ? (
-                  <img
-                    src={image}
-                    className="h-48 w-full object-cover group-hover:scale-110 transition duration-500"
-                  />
-                ) : (
-                  <div className="h-48 w-full flex items-center justify-center text-gray-400 text-sm">
-                    No Image
-                  </div>
-                )}
-
-                <div className="p-5">
-
-                  <h2 className="font-bold text-lg group-hover:text-orange-600 transition">
-                    {r.restaurantName || "Restaurant"}
-                  </h2>
-
-                  <p className="text-gray-500 text-sm">
-                    📍 {r.location || "Location"}
-                  </p>
-
-                </div>
-
-              </div>
-
-            )
-
-          })}
-
-        </div>
-
+      {/* HEADER */}
+      <div className="listing-header text-center">
+        <h1 className="listing-title">
+          🍽 Explore Authentic Dining & Cuisines
+        </h1>
+        <p className="listing-subtitle">
+          Discover flavors, romance & unforgettable culinary journeys ✨
+        </p>
       </div>
 
+      {/* GRID */}
+      <div className="listing-grid">
+        {safeRestaurants.map((r) => {
+          const image = getServiceImage(r.images, "restaurant");
+
+          return (
+            <div
+              key={r._id || r.id}
+              onClick={() => navigate(`/restaurant/${r._id || r.id}`)}
+              className="listing-card"
+            >
+              {/* IMAGE */}
+              <div className="card-img-wrapper">
+                <img
+                  src={image}
+                  alt={r.restaurantName}
+                  className="card-img"
+                />
+              </div>
+
+              <div className="card-content">
+                <h2 className="card-title">
+                  {r.restaurantName || "Heritage Dining"}
+                </h2>
+
+                <p className="card-meta">
+                  📍 {r.location || "Pan-India"}
+                </p>
+
+                {r.cuisine && (
+                  <p className="text-xs text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full inline-block mt-2 font-medium">
+                    🍲 {r.cuisine}
+                  </p>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
-
   );
-
 }
 
 export default Restaurants;

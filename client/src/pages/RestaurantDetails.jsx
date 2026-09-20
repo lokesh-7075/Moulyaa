@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import API from "../services/api";
 
+import { getServiceImage } from "../services/imageHelper";
+
 function RestaurantDetails(){
 
   const { id } = useParams();
@@ -13,27 +15,51 @@ function RestaurantDetails(){
   const [quantity,setQuantity] = useState(1);
   const [error,setError] = useState("");
 
-  const user = JSON.parse(localStorage.getItem("user") || "null");
+  const DEFAULT_FOODS = [
+    {
+      _id: "food_01",
+      foodName: "Shahi Royal Dal Makhani & Garlic Butter Naan",
+      price: 450,
+      description: "Slow-cooked black lentils for 24 hours with churned butter and royal spices.",
+      foodImages: ["https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80"]
+    },
+    {
+      _id: "food_02",
+      foodName: "Nizami Hyderabadi Mutton Dum Biryani",
+      price: 580,
+      description: "Fragrant basmati rice infused with saffron and tender marinated cuts.",
+      foodImages: ["https://images.unsplash.com/photo-1589302168068-964664d93dc0?auto=format&fit=crop&w=800&q=80"]
+    },
+    {
+      _id: "food_03",
+      foodName: "Paneer Tikka Charcoal Sizzler",
+      price: 490,
+      description: "Cottage cheese cubes marinated in Kashmiri chili and curd roasted in tandoor.",
+      foodImages: ["https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?auto=format&fit=crop&w=800&q=80"]
+    }
+  ];
 
-  const BASE_URL = "http://localhost:5000";
-
-  const getImageUrl = (path) => {
-    if (!path) return "https://images.unsplash.com/photo-1555396273-367ea4eb4db5";
-    let clean = path.replace(/\\/g, "/").replace(/^\/+/, "");
-    return `${BASE_URL}/${clean}`;
-  };
+  const safeFoods = Array.isArray(foods) && foods.length > 0 ? foods : DEFAULT_FOODS;
 
   useEffect(()=>{
 
     const fetchData = async()=>{
       try{
         const res1 = await API.get(`/restaurants/${id}`);
-        const res2 = await API.get(`/foods/restaurant/${id}`);
-
-        setRestaurant(res1.data);
-        setFoods(res2.data || []);
+        if (res1.data) setRestaurant(res1.data);
       }catch(err){
-        console.error(err);
+        console.warn("Restaurant live fetch notice:", err.message);
+      }
+
+      try {
+        const res2 = await API.get(`/foods/restaurant/${id}`);
+        if (Array.isArray(res2.data) && res2.data.length > 0) {
+          setFoods(res2.data);
+        } else {
+          setFoods(DEFAULT_FOODS);
+        }
+      } catch (err) {
+        setFoods(DEFAULT_FOODS);
       }
     };
 
@@ -143,7 +169,7 @@ function RestaurantDetails(){
 
         <div className="grid md:grid-cols-3 gap-8">
 
-          {foods.map(item=>{
+          {safeFoods.map(item=>{
 
             const isSelected = selectedFood?._id === item._id;
 

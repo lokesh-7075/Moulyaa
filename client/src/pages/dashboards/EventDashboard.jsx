@@ -1,6 +1,7 @@
 import { useState,useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../../services/api";
+import "./EventDashboard.css";
 
 function EventDashboard(){
 
@@ -19,16 +20,13 @@ function EventDashboard(){
   // ✅ IMAGE FIX FUNCTION (NO DUPLICATES)
   const getImage = (path)=>{
     if(!path) return "https://cdn-icons-png.flaticon.com/512/847/847969.png";
-
     if(path.startsWith("http")) return path;
-
-    const cleanPath = path.replace(/\\/g, "/").replace(/^\/+/, "");
-
-    if(cleanPath.startsWith("uploads")){
-      return `${BASE_URL}/${cleanPath}`;
+    const clean = path.replace(/\\/g,"/");
+    const index = clean.indexOf("uploads/");
+    if(index !== -1){
+      return `${BASE_URL}/${clean.substring(index)}`;
     }
-
-    return `${BASE_URL}/uploads/${cleanPath}`;
+    return `${BASE_URL}/uploads/${clean.replace(/^\/+/,"")}`;
   };
 
   // =====================
@@ -42,12 +40,15 @@ function EventDashboard(){
         API.get("/payments/provider-earnings")
       ]);
 
-      setEvents(eventRes.data || []);
-      setBookings(bookingRes.data?.bookings || bookingRes.data || []);
-      setEarnings(earningRes.data.totalEarnings || 0);
+      setEvents(Array.isArray(eventRes.data) ? eventRes.data : []);
+      const rawB = bookingRes.data?.bookings || bookingRes.data;
+      setBookings(Array.isArray(rawB) ? rawB : []);
+      setEarnings(earningRes.data?.totalEarnings || 0);
 
     }catch(err){
-      console.error(err);
+      console.warn("Event dashboard fetch notice:", err.message);
+      setEvents([]);
+      setBookings([]);
     }finally{
       setLoading(false);
     }
@@ -61,17 +62,17 @@ function EventDashboard(){
   // =====================
   // STATS
   // =====================
-  const upcomingEvents = events.filter(
-    e => e.eventDate && new Date(e.eventDate) > new Date()
+  const safeEvents = Array.isArray(events) ? events : [];
+  const upcomingEvents = safeEvents.filter(
+    e => e && e.eventDate && new Date(e.eventDate) > new Date()
   );
 
-  const totalBookings = bookings.length;
+  const totalBookings = Array.isArray(bookings) ? bookings.length : 0;
 
   const logout = ()=>{
     localStorage.clear();
     navigate("/login");
   };
-
 
   if(loading){
     return(
@@ -81,54 +82,47 @@ function EventDashboard(){
     )
   }
 
+  const myShare = Math.floor(earnings * 0.75);
 
-  return(
+  return (
+    <div className="event-dashboard-container">
 
-    <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-white">
+      {/* ================= HEADER ================= */}
+      <div className="event-header">
 
-      {/* TOP BAR */}
-      <div className="flex justify-between items-center px-10 py-5 backdrop-blur-lg bg-white/60 shadow-md">
+        <div className="logo-section">
+          <h1 className="event-title">
+            Moulyas Events 🎪
+          </h1>
+          <p className="event-subtitle">Create events, manage reservations, track ticket sales & review revenue</p>
+        </div>
 
-        <h1 className="text-3xl font-extrabold bg-gradient-to-r from-pink-500 to-purple-600 text-transparent bg-clip-text">
-          Moulyas ✨
-        </h1>
+        {/* PROFILE */}
+        <div className="profile-container">
 
-        <div className="relative">
-
-          {/* ✅ PROFILE IMAGE FIX */}
           <img
             src={getImage(user?.profileImage)}
-            onError={(e)=>{
-              e.target.src = "https://cdn-icons-png.flaticon.com/512/847/847969.png";
-            }}
-            className="w-11 h-11 rounded-full object-cover cursor-pointer border-2 border-purple-400 hover:scale-110 transition"
+            className="profile-avatar"
             onClick={()=>setOpen(!open)}
           />
 
           {open && (
-            <div className="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-xl p-4">
+            <div className="profile-dropdown">
 
-              <div className="flex gap-3 mb-3">
-
-                {/* ✅ DROPDOWN IMAGE FIX */}
+              <div className="dropdown-user-info">
                 <img
                   src={getImage(user?.profileImage)}
-                  onError={(e)=>{
-                    e.target.src = "https://cdn-icons-png.flaticon.com/512/847/847969.png";
-                  }}
-                  className="w-12 h-12 rounded-full object-cover"
+                  className="dropdown-user-img"
                 />
-
-                <div>
-                  <p className="font-semibold">{user?.name}</p>
-                  <p className="text-sm text-gray-500">{user?.email}</p>
+                <div className="dropdown-user-details">
+                  <p className="dropdown-user-name">{user?.name}</p>
+                  <p className="dropdown-user-email">{user?.email}</p>
                 </div>
-
               </div>
 
               <button
                 onClick={logout}
-                className="w-full text-red-500 hover:bg-red-50 p-2 rounded-lg"
+                className="logout-btn"
               >
                 Logout
               </button>
@@ -140,135 +134,143 @@ function EventDashboard(){
 
       </div>
 
-
-      {/* BODY */}
-      <div className="p-10">
-
-        <h2 className="text-3xl font-bold mb-8 text-gray-800">
-          🎉 Event Organizer Dashboard
-        </h2>
-
-
-        {/* STATS */}
-        <div className="grid md:grid-cols-4 gap-6 mb-10">
-
+      {/* ================= STATS ================= */}
+      {events.length > 0 && (
+        <div className="stats-grid">
           {[
-            {title:"Total Events",value:events.length,color:"from-purple-400 to-purple-600"},
-            {title:"Upcoming",value:upcomingEvents.length,color:"from-green-400 to-green-600"},
-            {title:"Bookings",value:totalBookings,color:"from-blue-400 to-blue-600"},
-            {title:"Earnings",value:`₹${earnings}`,color:"from-pink-400 to-pink-600"}
+            {title:"Total Events",value:events.length,desc:"Created listings",colors:{start:"#7c3aed",end:"#4f46e5"},icon:"🎪"},
+            {title:"Upcoming Events",value:upcomingEvents.length,desc:"Active schedules",colors:{start:"#10b981",end:"#0d9488"},icon:"📅"},
+            {title:"Total Bookings",value:totalBookings,desc:"Sold tickets count",colors:{start:"#2563eb",end:"#06b6d4"},icon:"🎟"},
+            {title:"Net Share (75%)",value:`₹${myShare}`,desc:"Profit after system fee",colors:{start:"#ec4899",end:"#db2777"},icon:"📈"}
           ].map((card,i)=>(
             <div key={i}
-              className={`bg-gradient-to-r ${card.color} text-white p-6 rounded-2xl shadow-lg hover:scale-105 transition duration-300`}
+              className="stat-card"
+              style={{
+                "--gradient-start": card.colors.start,
+                "--gradient-end": card.colors.end
+              }}
             >
-              <p className="text-sm opacity-80">{card.title}</p>
-              <h3 className="text-3xl font-bold mt-2">{card.value}</h3>
+              <div className="stat-card-top">
+                <div>
+                  <p className="stat-card-title">{card.title}</p>
+                  <h2 className="stat-card-value">{card.value}</h2>
+                </div>
+                <span className="stat-card-icon">{card.icon}</span>
+              </div>
+              <p className="stat-card-desc">{card.desc}</p>
             </div>
           ))}
-
         </div>
+      )}
 
-
-        {/* ACTIONS */}
-        <div className="grid md:grid-cols-4 gap-6 mb-10">
-
-          {[
-            {title:"Create Event",path:"/create-event"},
-            {title:"Manage Events",path:"/manage-events"},
-            {title:"Bookings",path:"/event-bookings"}
-          ].map((item,i)=>(
-            <div key={i}
-              onClick={()=>navigate(item.path)}
-              className="bg-white/70 backdrop-blur-xl p-6 rounded-2xl shadow hover:shadow-2xl hover:-translate-y-1 cursor-pointer transition"
-            >
-              <h3 className="font-semibold">{item.title}</h3>
-            </div>
-          ))}
-
+      {/* ================= ACTIONS ================= */}
+      <div className="actions-bar">
+        <h2 className="actions-title">🎉 My Created Events</h2>
+        
+        <div className="action-buttons">
+          <button
+            onClick={()=>navigate("/manage-events")}
+            className="btn-secondary"
+          >
+            ⚙ Manage Listings
+          </button>
+          <button
+            onClick={()=>navigate("/event-bookings")}
+            className="btn-secondary"
+          >
+            📋 Bookings list
+          </button>
+          <button
+            onClick={()=>navigate("/create-event")}
+            className="btn-primary"
+          >
+            + Create Event
+          </button>
         </div>
+      </div>
 
-
-        {/* EVENTS GRID */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-
+      {/* ================= EVENTS GRID ================= */}
+      {events.length === 0 ? (
+        <div className="no-events-card">
+          <span className="no-events-icon">🎉</span>
+          <h2 className="no-events-title">No Events Listed</h2>
+          <p className="no-events-desc">Get started by creating your first event to start accepting ticket bookings!</p>
+          <button
+            onClick={() => navigate("/create-event")}
+            className="create-first-event-btn"
+          >
+            Create Your First Event
+          </button>
+        </div>
+      ) : (
+        <div className="events-grid">
           {events.map(event=>{
-
             const eventBookings = bookings.filter(
               b => b.serviceId?.toString() === event._id?.toString()
             ).length;
 
             return(
+              <div key={event._id} className="event-card">
+                <div className="event-card-img-wrapper">
+                  <img
+                    src={
+                      event.images?.length
+                      ? getImage(event.images[0])
+                      : "https://via.placeholder.com/400"
+                    }
+                    onError={(e)=>{
+                      e.target.src = "https://via.placeholder.com/400";
+                    }}
+                    className="event-card-img"
+                  />
+                  <span className="event-card-price">
+                    ₹{event.price}
+                  </span>
+                </div>
 
-              <div
-                key={event._id}
-                className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl hover:scale-[1.02] transition duration-300"
-              >
-
-                {/* ✅ EVENT IMAGE FIX */}
-                <img
-                  src={
-                    event.images?.length
-                    ? getImage(event.images[0])
-                    : "https://via.placeholder.com/400"
-                  }
-                  onError={(e)=>{
-                    e.target.src = "https://via.placeholder.com/400";
-                  }}
-                  className="h-44 w-full object-cover"
-                />
-
-                <div className="p-5">
-
-                  <h4 className="font-bold text-lg">
+                <div className="event-card-content">
+                  <h4 className="event-card-title">
                     {event.title}
                   </h4>
 
-                  <p className="text-gray-500 text-sm">
+                  <p className="event-card-loc">
                     📍 {event.location}
                   </p>
 
-                  {/* ✅ DATE FIX */}
-                  <p className="text-gray-500 text-sm">
+                  <p className="event-card-date">
                     📅 {
                       event.eventDate
-                      ? new Date(event.eventDate).toLocaleDateString("en-IN")
+                      ? new Date(event.eventDate).toLocaleDateString("en-IN", {
+                          weekday: "short",
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric"
+                        })
                       : "No Date"
                     }
                   </p>
 
-                  <p className="text-purple-600 font-semibold mt-2">
-                    ₹{event.price}
-                  </p>
-
-                  <p className="text-sm text-gray-600 mt-1">
-                    🎟 Bookings: {eventBookings}
-                  </p>
-
-                  <div className="flex justify-between mt-4">
+                  <div className="event-card-footer">
+                    <span className="event-card-bookings">
+                      🎟 Bookings: {eventBookings}
+                    </span>
                     <button
                       onClick={()=>navigate(`/edit-event/${event._id}`)}
-                      className="text-blue-600 hover:underline"
+                      className="edit-event-btn"
                     >
                       Edit
                     </button>
                   </div>
-
                 </div>
 
               </div>
-
             )
-
           })}
-
         </div>
-
-      </div>
+      )}
 
     </div>
-
-  )
-
+  );
 }
 
 export default EventDashboard;

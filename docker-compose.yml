@@ -1,0 +1,82 @@
+version: "3.8"
+
+services:
+  # ==========================================
+  # 🌐 Client Frontend (Port 3000)
+  # ==========================================
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:5000/api
+        VITE_BASE_URL: http://localhost:5000
+    ports:
+      - "3000:80"
+    depends_on:
+      - server
+    restart: always
+
+  # ==========================================
+  # 👑 Admin Portal (Port 3001)
+  # ==========================================
+  admin:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:5000/api
+        VITE_BASE_URL: http://localhost:5000
+    ports:
+      - "3001:80"
+    depends_on:
+      - server
+    restart: always
+
+  # ==========================================
+  # ⚙️ Node.js API Server (Port 5000)
+  # ==========================================
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - MONGO_URI=mongodb://mongodb:27017/moulyasree
+      - JWT_SECRET=moulyasree_secret_production_key_2026
+      - AWS_REGION=us-east-1
+      - AWS_S3_BUCKET_NAME=moulyasree-tourism-bucket
+      - BEDROCK_MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0
+    depends_on:
+      - mongodb
+    restart: always
+
+  # ==========================================
+  # 🍃 MongoDB / DocumentDB Local Container
+  # ==========================================
+  mongodb:
+    image: mongo:7-jammy
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: always
+
+  # ==========================================
+  # ⚡ DynamoDB Local (AWS Simulation)
+  # ==========================================
+  dynamodb-local:
+    image: amazon/dynamodb-local:latest
+    ports:
+      - "8000:8000"
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /data"
+    volumes:
+      - dynamo_data:/data
+    restart: always
+
+volumes:
+  mongo_data:
+  dynamo_data:

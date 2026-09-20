@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import API from "../services/api";
 import { useNavigate } from "react-router-dom";
+import "./Login.css";
 
 function Login(){
 
@@ -85,23 +86,23 @@ function Login(){
   // =========================
   return (
 
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rose-100 via-white to-orange-100 px-4">
+    <div className="login-container">
 
       {/* GLASS CARD */}
-      <div className="w-full max-w-md backdrop-blur-xl bg-white/60 border border-white/40 shadow-2xl rounded-3xl p-8 transition-all duration-500 hover:shadow-rose-200">
+      <div className="login-card">
 
         {/* TITLE */}
-        <h2 className="text-3xl font-extrabold text-center text-gray-800 mb-6">
+        <h2 className="login-title">
           Welcome Back ✨
         </h2>
 
-        <p className="text-center text-gray-500 mb-8">
+        <p className="login-subtitle">
           Login to continue your journey
         </p>
 
 
         {/* FORM */}
-        <form onSubmit={handleLogin} className="space-y-5">
+        <form onSubmit={handleLogin} className="login-form">
 
           {/* EMAIL */}
           <input
@@ -110,7 +111,7 @@ function Login(){
             value={email}
             onChange={(e)=>setEmail(e.target.value)}
             required
-            className="w-full px-4 py-3 rounded-xl bg-white/70 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-400 transition"
+            className="login-input"
           />
 
           {/* PASSWORD */}
@@ -120,13 +121,13 @@ function Login(){
             value={password}
             onChange={(e)=>setPassword(e.target.value)}
             required
-            className="w-full px-4 py-3 rounded-xl bg-white/70 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-400 transition"
+            className="login-input"
           />
 
           {/* BUTTON */}
           <button
             type="submit"
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-orange-500 to-rose-500 text-white font-semibold shadow-lg hover:scale-105 hover:shadow-xl transition-all duration-300"
+            className="login-btn"
           >
             Login
           </button>
@@ -135,11 +136,11 @@ function Login(){
 
 
         {/* FOOTER */}
-        <p className="text-center text-sm text-gray-500 mt-6">
+        <p className="login-footer">
           New here?{" "}
           <span
             onClick={()=>navigate("/register")}
-            className="text-orange-500 font-semibold cursor-pointer hover:underline"
+            className="create-account-link"
           >
             Create account
           </span>

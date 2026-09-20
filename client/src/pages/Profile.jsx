@@ -1,5 +1,6 @@
 import { useState } from "react";
 import API from "../services/api";
+import "./Profile.css";
 
 function Profile(){
 
@@ -20,12 +21,13 @@ function Profile(){
     if (path.startsWith("http")) return path;
 
     // ✅ remove full system path (C:/Users/...)
-    if (path.includes("uploads")) {
-      const clean = path.split("uploads")[1]; // /profiles/xxx.jpg
-      return `${BASE_URL}/uploads${clean}`;
+    const clean = path.replace(/\\/g,"/");
+    const index = clean.indexOf("uploads/");
+    if (index !== -1) {
+      return `${BASE_URL}/${clean.substring(index)}`;
     }
 
-    return `${BASE_URL}/${path}`;
+    return `${BASE_URL}/uploads/${clean}`;
   };
 
   const [form,setForm] = useState({
@@ -115,22 +117,22 @@ function Profile(){
 
   return(
 
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 via-white to-orange-50">
+    <div className="profile-page-container">
 
-      <div className="w-[420px] p-6 rounded-3xl bg-white/60 backdrop-blur-xl shadow-2xl">
+      <div className="profile-card">
 
         {/* IMAGE */}
-        <div className="flex flex-col items-center mb-5">
+        <div className="profile-avatar-section">
 
           <img
             src={preview}
             onError={(e)=>{
               e.target.src = "https://cdn-icons-png.flaticon.com/512/847/847969.png";
             }}
-            className="w-28 h-28 rounded-full object-cover border-4 border-white shadow-lg"
+            className="profile-preview-img"
           />
 
-          <label className="mt-3 text-sm text-blue-600 cursor-pointer hover:underline">
+          <label className="change-photo-label">
             Change Photo
             <input
               type="file"
@@ -141,7 +143,7 @@ function Profile(){
 
         </div>
 
-        <h2 className="text-center text-2xl font-bold mb-4">
+        <h2 className="profile-title">
           My Profile 💖
         </h2>
 
@@ -150,7 +152,7 @@ function Profile(){
           value={form.name}
           onChange={handleChange}
           placeholder="Name"
-          className="w-full p-2 mb-3 border rounded"
+          className="profile-input"
         />
 
         <input
@@ -158,7 +160,7 @@ function Profile(){
           value={form.email}
           onChange={handleChange}
           placeholder="Email"
-          className="w-full p-2 mb-3 border rounded"
+          className="profile-input"
         />
 
         <input
@@ -166,12 +168,12 @@ function Profile(){
           value={form.phone}
           onChange={handleChange}
           placeholder="Phone"
-          className="w-full p-2 mb-4 border rounded"
+          className="profile-input"
         />
 
         <button
           onClick={handleUpdate}
-          className="w-full py-2 rounded-xl bg-gradient-to-r from-pink-500 to-orange-500 text-white hover:scale-105 transition"
+          className="save-profile-btn"
         >
           {loading ? "Updating..." : "Save Changes"}
         </button>

@@ -1,27 +1,38 @@
+import { useState } from "react";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
+import "./Layout.css";
 
 function Layout({ children }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
 
-    <div className="flex h-screen overflow-hidden bg-gradient-to-br from-[#fdf4ff] via-[#f3e8ff] to-[#ffe4e6]">
+    <div className="admin-layout-container">
 
       {/* SIDEBAR */}
-      <Sidebar />
+      <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
       {/* RIGHT SIDE */}
-      <div className="flex-1 flex flex-col ml-64">
+      <div className="layout-main-area">
 
         {/* NAVBAR */}
-        <Navbar />
+        <Navbar onMenuClick={() => setSidebarOpen(true)} />
 
         {/* CONTENT */}
-        <main className="flex-1 overflow-y-auto p-6 mt-[70px]">
+        <main className="layout-content-box">
           {children}
         </main>
 
       </div>
+
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div 
+          onClick={() => setSidebarOpen(false)}
+          className="mobile-sidebar-overlay"
+        />
+      )}
 
     </div>
 

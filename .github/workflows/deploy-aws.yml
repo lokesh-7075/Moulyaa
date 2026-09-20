@@ -1,0 +1,101 @@
+name: 🚀 Deploy Moulyasree to AWS Cloud
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  AWS_S3_FRONTEND_BUCKET: moulyasree-frontend-prod
+  AWS_CLOUDFRONT_DIST_ID: E1234567890ABC
+  ECR_REPOSITORY: moulyasree-api
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  # ==========================================
+  # 🌐 Job 1: Build & Deploy Frontend / Admin to S3 + CloudFront
+  # ==========================================
+  deploy-frontend:
+    name: 📦 Deploy Frontend to AWS S3 & CloudFront
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: |
+            client/package-lock.json
+            admin/package-lock.json
+
+      - name: 🔑 Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: 🔨 Install & Build Client App
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_BASE_URL: ${{ secrets.VITE_BASE_URL }}
+        run: |
+          cd client
+          npm ci
+          npm run build
+
+      - name: 🔨 Install & Build Admin Portal
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_BASE_URL: ${{ secrets.VITE_BASE_URL }}
+        run: |
+          cd admin
+          npm ci
+          npm run build
+
+      - name: ☁️ Sync Client Build to S3
+        run: |
+          aws s3 sync client/dist/ s3://${{ env.AWS_S3_FRONTEND_BUCKET }}/ --delete
+
+      - name: ⚡ Invalidate CloudFront Cache
+        if: env.AWS_CLOUDFRONT_DIST_ID != ''
+        run: |
+          aws cloudfront create-invalidation --distribution-id ${{ env.AWS_CLOUDFRONT_DIST_ID }} --paths "/*"
+
+  # ==========================================
+  # ⚙️ Job 2: Build & Deploy Backend Docker Image to Amazon ECR / App Runner
+  # ==========================================
+  deploy-backend:
+    name: 🐳 Deploy Backend Container to AWS
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔑 Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: 🔐 Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: 🐳 Build, Tag, and Push Backend Image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          cd server
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest

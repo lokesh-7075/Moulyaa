@@ -9,6 +9,11 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 
+// AWS BEDROCK AI FEATURES
+import AITripPlanner from "./pages/AITripPlanner";
+import SnapAndExplore from "./pages/SnapAndExplore";
+import BundleBookings from "./pages/BundleBookings";
+
 // USER SERVICES
 import Hotels from "./pages/Hotels";
 import HotelDetails from "./pages/HotelDetails";
@@ -74,6 +79,11 @@ function App() {
           <Route index element={<Home />} />
           <Route path="login" element={<Login />} />
           <Route path="register" element={<Register />} />
+
+          {/* ================= AWS BEDROCK AI INNOVATION ================= */}
+          <Route path="ai-planner" element={<AITripPlanner />} />
+          <Route path="snap-explore" element={<SnapAndExplore />} />
+          <Route path="bundle-bookings" element={<BundleBookings />} />
 
           {/* ================= SERVICES ================= */}
           <Route path="hotels" element={<Hotels />} />
